@@ -38,8 +38,8 @@ func (l *Lottery[T]) Draw() T {
     return l.result(r).ID
 }
 
-// Total get amount of items
-func (l *Lottery[T]) Total() int {
+// Len get amount of items
+func (l *Lottery[T]) Len() int {
     return l.total
 }
 
