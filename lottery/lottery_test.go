@@ -19,8 +19,8 @@ func (l *TestLotterySuite) TestInt() {
     lt.AddItem(100, 10)
     lt.AddItem(1000, 100)
     l.Equal(3, lt.Len())
-    item := lt.Draw()
-    l.NotNil(item)
+    i := lt.Draw()
+    l.NotNil(i)
 }
 
 func (l *TestLotterySuite) TestString() {
@@ -29,6 +29,6 @@ func (l *TestLotterySuite) TestString() {
     lt.AddItem("B", 1)
     lt.AddItem("C", 1)
     l.Equal(3, lt.total)
-    item := lt.Draw()
-    l.NotNil(item)
+    i := lt.Draw()
+    l.NotNil(i)
 }

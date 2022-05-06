@@ -12,10 +12,9 @@ type Lottery[T comparable] struct {
     total  int
     weight int
     pool   []*item[T]
-    roller Roller
 }
 
-type Roller func(weight int) (result int)
+type Roller func(int) (int)
 
 // AddItem add an item for Lottery draw
 func (l *Lottery[T]) AddItem(ID T, weight int) {
@@ -24,17 +23,19 @@ func (l *Lottery[T]) AddItem(ID T, weight int) {
     l.pool = append(l.pool, newItem(ID, weight))
 }
 
-// SetRoller set a method for getting result
-func (l *Lottery[T]) SetRoller(r Roller) {
-    l.roller = r
-}
-
 // Draw draw a lottery
-func (l *Lottery[T]) Draw() T {
-    if l.roller == nil {
-        l.roller = rand.Intn
+func (l *Lottery[T]) Draw(random ...interface{}) T {
+    var roller Roller
+    var ok bool
+    if len(random) == 0 {
+        roller = rand.Intn
+    }else{
+        roller, ok = random[0].(Roller)
+        if !ok {
+            roller = rand.Intn
+        }
     }
-    r := l.roller(l.weight)
+    r := roller(l.weight)
     return l.result(r).ID
 }
 
