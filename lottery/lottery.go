@@ -1,6 +1,8 @@
 package lottery
 
-import "math/rand"
+import (
+    "math/rand"
+)
 
 // NewLottery create a new lottery pool
 func NewLottery[T comparable]() *Lottery[T] {
@@ -14,7 +16,7 @@ type Lottery[T comparable] struct {
     pool   []*item[T]
 }
 
-type Roller func(int) (int)
+type Roller func(int) int
 
 // AddItem add an item for Lottery draw
 func (l *Lottery[T]) AddItem(ID T, weight int) {
@@ -29,7 +31,7 @@ func (l *Lottery[T]) Draw(random ...interface{}) T {
     var ok bool
     if len(random) == 0 {
         roller = rand.Intn
-    }else{
+    } else {
         roller, ok = random[0].(Roller)
         if !ok {
             roller = rand.Intn
@@ -48,9 +50,13 @@ func (l *Lottery[T]) result(r int) *item[T] {
     min := 0
     for _, v := range l.pool {
         min += v.Weight
-        if min >= r {
+        if r < min {
             return v
         }
+
+        //if min >= r {
+        //    return v
+        //}
     }
     return l.pool[0]
 }
