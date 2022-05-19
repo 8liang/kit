@@ -26,13 +26,13 @@ func (l *Lottery[T]) AddItem(ID T, weight int) {
 }
 
 // Draw draw a lottery
-func (l *Lottery[T]) Draw(random ...interface{}) T {
+func (l *Lottery[T]) Draw(random ...Roller) T {
     var roller Roller
     var ok bool
     if len(random) == 0 {
         roller = rand.Intn
     } else {
-        roller, ok = random[0].(Roller)
+        roller = random[0]
         if !ok {
             roller = rand.Intn
         }
@@ -53,10 +53,6 @@ func (l *Lottery[T]) result(r int) *item[T] {
         if r < min {
             return v
         }
-
-        //if min >= r {
-        //    return v
-        //}
     }
     return l.pool[0]
 }
