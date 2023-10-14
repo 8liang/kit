@@ -28,12 +28,11 @@ func (l *Lottery[T]) AddItem(ID T, weight int) {
 // Draw draw a lottery
 func (l *Lottery[T]) Draw(random ...Roller) T {
     var roller Roller
-    var ok bool
     if len(random) == 0 {
         roller = rand.Intn
     } else {
         roller = random[0]
-        if !ok {
+        if roller == nil {
             roller = rand.Intn
         }
     }
