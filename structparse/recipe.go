@@ -1,10 +1,14 @@
 package structparse
 
-import "reflect"
+import (
+    "reflect"
+)
 
 type Recipe[T any] struct {
     rType reflect.Type
     isPtr bool
+    name  string
+    path  string
 }
 
 func (r *Recipe[T]) Parse(instance T) {
@@ -13,6 +17,8 @@ func (r *Recipe[T]) Parse(instance T) {
         r.isPtr = true
         r.rType = r.rType.Elem()
     }
+    r.name = r.rType.Name()
+    r.path = r.rType.PkgPath()
 }
 
 func (r *Recipe[T]) Spawn() T {
@@ -22,4 +28,12 @@ func (r *Recipe[T]) Spawn() T {
         instance = instance.Addr()
     }
     return instance.Interface().(T)
+}
+
+func (r *Recipe[T]) Name() string {
+    return r.name
+}
+
+func (r *Recipe[T]) Path() string {
+    return r.path
 }
