@@ -1,11 +1,18 @@
 package listener
 
 import (
-    "context"
+    "fmt"
     "net"
     "os"
     "strings"
 )
+
+func Listen(address string) (listener net.Listener, err error) {
+    if ok, filename := isUnixDomainSocket(address); ok {
+        return listenUnixDomain(filename)
+    }
+    return net.Listen("tcp", address)
+}
 
 func isUnixDomainSocket(addr string) (bool, string) {
     if !strings.HasPrefix(addr, "unix:") {
@@ -14,25 +21,36 @@ func isUnixDomainSocket(addr string) (bool, string) {
     return true, strings.TrimPrefix(addr, "unix:")
 }
 
-func Listen(address string, ctx context.Context) (listener net.Listener, err error) {
-    if ok, filename := isUnixDomainSocket(address); ok {
-        return listenUnixDomainSocket(filename, ctx)
-    }
-    return net.Listen("tcp", address)
+type domainSocketListener struct {
+    net.Listener
+    filename string
 }
 
-func listenUnixDomainSocket(filename string, ctx context.Context) (listener net.Listener, err error) {
-    if listener, err = net.Listen("unix", filename); err != nil {
-        panic(err)
-    }
-    if err = os.Chmod(filename, 0666); err != nil {
-        panic(err)
-    }
-    go func() {
-        <-ctx.Done()
-        if err := os.Remove(filename); err != nil {
-            panic(err)
+func (u *domainSocketListener) Accept() (net.Conn, error) {
+    return u.Listener.Accept()
+}
+
+func (u *domainSocketListener) Close() error {
+    defer func() {
+        if err := os.Remove(u.filename); err != nil {
+            fmt.Printf("remove unix domain socket file %q error %q", u.filename, err)
         }
     }()
-    return
+    return u.Listener.Close()
+}
+
+func (u *domainSocketListener) Addr() net.Addr {
+    return u.Listener.Addr()
+}
+
+func listenUnixDomain(filepath string) (_ net.Listener, err error) {
+    l := &domainSocketListener{filename: filepath}
+    if l.Listener, err = net.Listen("unix", filepath); err != nil {
+        return
+    }
+    if err = os.Chmod(filepath, 0666); err != nil {
+        _ = l.Close()
+        return
+    }
+    return l, err
 }
