@@ -15,7 +15,10 @@ type TimeCrosser interface {
 }
 
 func Cross(c TimeCrosser) {
-    last, current := touch(c)
+    CrossWithWeekStartsAt(c, carbon.Monday)
+}
+func CrossWithWeekStartsAt(c TimeCrosser, weekStartsAt string) {
+    last, current := touch(c, weekStartsAt)
     if last.IsSameHour(current) {
         return
     }
@@ -33,8 +36,8 @@ func Cross(c TimeCrosser) {
     }
 }
 
-func touch(c TimeCrosser) (carbon.Carbon, carbon.Carbon) {
+func touch(c TimeCrosser, weekStartsAt string) (carbon.Carbon, carbon.Carbon) {
     last := c.GetTouchedAt()
     c.SetTouchedAt(time.Now())
-    return carbon.CreateFromStdTime(last).SetWeekStartsAt(carbon.Monday), carbon.Now().SetWeekStartsAt(carbon.Monday)
+    return carbon.CreateFromStdTime(last).SetWeekStartsAt(weekStartsAt), carbon.Now().SetWeekStartsAt(weekStartsAt)
 }
