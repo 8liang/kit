@@ -37,7 +37,7 @@ func CrossWithWeekStartsAt(c TimeCrosser, weekStartsAt string) {
 }
 
 func touch(c TimeCrosser, weekStartsAt string) (carbon.Carbon, carbon.Carbon) {
-    last := c.GetTouchedAt()
+    last := c.GetTouchedAt().Local()
     c.SetTouchedAt(time.Now())
     return carbon.CreateFromStdTime(last).SetWeekStartsAt(weekStartsAt), carbon.Now().SetWeekStartsAt(weekStartsAt)
 }
