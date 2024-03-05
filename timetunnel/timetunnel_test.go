@@ -45,9 +45,9 @@ func TestTunnel(t *testing.T) {
     tt := &stubTimeTunnel{touchedAt: last}
     Pass(tt, WithWeekStartsAt(carbon.Monday), WithCurrentTime(current))
     assert.True(t, tt.Week, "week should be crossed")
+    assert.Equal(t, current.Unix(), tt.GetTouchedAt().Unix(), "touchedAt should be updated")
 
     tm := time.Now()
-
     stub := &stubTimeTunnel{touchedAt: tm.Add(-time.Hour)}
     Pass(stub, WithWeekStartsAt(carbon.Monday))
     assert.True(t, stub.Hour, "hour should be crossed")
