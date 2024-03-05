@@ -1,12 +1,17 @@
 package crosstime
 
 import (
+    "github.com/stretchr/testify/assert"
     "testing"
     "time"
 )
 
 type stubTimeCrosser struct {
     touchedAt time.Time
+    Hour      bool
+    Day       bool
+    Week      bool
+    Month     bool
 }
 
 func (s *stubTimeCrosser) GetTouchedAt() time.Time {
@@ -18,27 +23,42 @@ func (s *stubTimeCrosser) SetTouchedAt(t time.Time) {
 }
 
 func (s *stubTimeCrosser) CrossHour() {
-    //TODO implement me
-    //panic("implement me")
+    s.Hour = true
 }
 
 func (s *stubTimeCrosser) CrossDay() {
-    //TODO implement me
-    //panic("implement me")
+    s.Day = true
 }
 
 func (s *stubTimeCrosser) CrossWeek() {
-    panic("cross")
+    s.Week = true
 }
 
 func (s *stubTimeCrosser) CrossMonth() {
-    //TODO implement me
-    //panic("implement me")
+    s.Month = true
 }
 
 func TestCross(t *testing.T) {
-    last, _ := time.Parse(time.RFC3339, "2024-03-03T16:55:17.596Z")
-    stub := &stubTimeCrosser{touchedAt: last}
+    tm := time.Now()
 
+    stub := &stubTimeCrosser{touchedAt: tm.Add(-time.Hour)}
     CrossWithWeekStartsAt(stub, "Monday")
+    assert.True(t, stub.Hour, "hour should be crossed")
+    assert.False(t, stub.Day, "day should not be crossed")
+    assert.False(t, stub.Week, "week should not be crossed")
+    assert.False(t, stub.Month, "month should not be crossed")
+    assert.Equal(t, time.Now().Unix(), stub.GetTouchedAt().Unix(), "touchedAt should be updated")
+
+    stub = &stubTimeCrosser{touchedAt: tm.Add(-time.Hour * 24)}
+    CrossWithWeekStartsAt(stub, "Monday")
+    assert.True(t, stub.Hour, "hour should be crossed")
+    assert.True(t, stub.Day, "day should be crossed")
+    assert.False(t, stub.Week, "week should not be crossed")
+    assert.False(t, stub.Month, "month should not be crossed")
+
+    stub = &stubTimeCrosser{touchedAt: tm.Add(-time.Hour * 24 * 6)}
+    CrossWithWeekStartsAt(stub, "Monday")
+    assert.True(t, stub.Hour, "hour should be crossed")
+    assert.True(t, stub.Week, "week should be crossed")
+    assert.True(t, stub.Day, "day should be crossed")
 }
