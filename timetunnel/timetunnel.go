@@ -18,11 +18,18 @@ type Options func(t *tunnel)
 type tunnel struct {
     Tunnel
     weekStartsAt string
+    current      time.Time
 }
 
 func WithWeekStartsAt(weekStartsAt string) Options {
     return func(t *tunnel) {
         t.weekStartsAt = weekStartsAt
+    }
+}
+
+func WithCurrentTime(currentTime time.Time) Options {
+    return func(t *tunnel) {
+        t.current = currentTime
     }
 }
 
@@ -35,7 +42,7 @@ func Pass(t Tunnel, opts ...Options) {
     passThrough(tt, last, current)
 }
 
-func passThrough(tt *tunnel, last, current carbon.Carbon) {
+func passThrough(tt Tunnel, last, current carbon.Carbon) {
     if last.IsSameHour(current) {
         return
     }
@@ -56,7 +63,12 @@ func passThrough(tt *tunnel, last, current carbon.Carbon) {
 }
 
 func touch(c *tunnel) (carbon.Carbon, carbon.Carbon) {
-    last := c.GetTouchedAt().Local()
-    c.SetTouchedAt(time.Now())
-    return carbon.CreateFromStdTime(last).SetWeekStartsAt(c.weekStartsAt), carbon.Now().SetWeekStartsAt(c.weekStartsAt)
+    if c.current.IsZero() {
+        c.current = time.Now()
+    }
+    last := c.GetTouchedAt()
+    c.SetTouchedAt(c.current)
+
+    return carbon.CreateFromStdTime(last.Local()).SetWeekStartsAt(c.weekStartsAt),
+        carbon.CreateFromStdTime(c.current.Local()).SetWeekStartsAt(c.weekStartsAt)
 }
