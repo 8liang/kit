@@ -8,11 +8,37 @@ import (
 type Tunnel interface {
     GetTouchedAt() time.Time
     SetTouchedAt(time.Time)
+    OnMinutePassed()
     OnHourPassed()
     OnDayPassed()
     OnWeekPassed()
     OnMonthPassed()
 }
+
+type EmptyTunnel struct{}
+
+func (e *EmptyTunnel) GetTouchedAt() time.Time {
+    return time.Now()
+}
+
+func (e *EmptyTunnel) SetTouchedAt(t time.Time) {
+}
+
+func (e *EmptyTunnel) OnMinutePassed() {
+}
+
+func (e *EmptyTunnel) OnHourPassed() {
+}
+
+func (e *EmptyTunnel) OnDayPassed() {
+}
+
+func (e *EmptyTunnel) OnWeekPassed() {
+}
+
+func (e *EmptyTunnel) OnMonthPassed() {
+}
+
 type Options func(t *tunnel)
 
 type tunnel struct {
@@ -43,6 +69,10 @@ func Pass(t Tunnel, opts ...Options) {
 }
 
 func passThrough(tt Tunnel, last, current carbon.Carbon) {
+    if last.IsSameMinute(current) {
+        return
+    }
+    tt.OnMinutePassed()
     if last.IsSameHour(current) {
         return
     }

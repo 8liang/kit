@@ -1,6 +1,7 @@
 package crosstime
 
 import (
+    "fmt"
     "github.com/8liang/kit/timetunnel"
     "github.com/golang-module/carbon/v2"
     "time"
@@ -17,6 +18,10 @@ type TimeCrosser interface {
 
 type tunnel struct {
     TimeCrosser
+}
+
+func (t *tunnel) OnMinutePassed() {
+    fmt.Printf("crosstime tunnel OnMinutePassed\n")
 }
 
 func (t *tunnel) OnHourPassed() {
