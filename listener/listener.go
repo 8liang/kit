@@ -43,12 +43,16 @@ func (u *domainSocketListener) Addr() net.Addr {
     return u.Listener.Addr()
 }
 
-func listenUnixDomain(filepath string) (_ net.Listener, err error) {
-    l := &domainSocketListener{filename: filepath}
-    if l.Listener, err = net.Listen("unix", filepath); err != nil {
+func listenUnixDomain(sockAddr string) (_ net.Listener, err error) {
+    l := &domainSocketListener{filename: sockAddr}
+    var addr *net.UnixAddr
+    if addr, err = net.ResolveUnixAddr("unix", sockAddr); err != nil {
         return
     }
-    if err = os.Chmod(filepath, 0666); err != nil {
+    if l.Listener, err = net.ListenUnix("unix", addr); err != nil {
+        return
+    }
+    if err = os.Chmod(sockAddr, 0666); err != nil {
         _ = l.Close()
         return
     }
