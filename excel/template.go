@@ -8,7 +8,7 @@ import (
 	"github.com/huandu/xstrings"
 )
 
-func genStruct(sheet *Sheet, shouldDisplay func(*Field) bool) (output []byte, err error) {
+func genStruct(sheet *Sheet, packageName string, shouldFieldDisplay func(*Field) bool) (output []byte, err error) {
 	var tpl *template.Template
 	tmpl := `
 package {{.PackageName}}
@@ -42,21 +42,24 @@ type {{capitalize .Name}}Tpl struct {
 	if tpl, err = template.New("struct").Funcs(template.FuncMap{
 		"capitalize": xstrings.FirstRuneToUpper,
 		"json":       func(s string) string { return "`json:\"" + s + "\"`" },
-		"visible":    shouldDisplay,
+		"visible":    shouldFieldDisplay,
 	}).Parse(tmpl); err != nil {
 		return
 	}
 	var buf bytes.Buffer
-	if err = tpl.Execute(&buf, sheet); err != nil {
+	if err = tpl.Execute(&buf, struct {
+		PackageName string
+		Sheet
+	}{Sheet: *sheet, PackageName: packageName}); err != nil {
 		return
 	}
 	output, err = format.Source(buf.Bytes())
 	return
 }
 
-func genInterface(sheet *Sheet, shouldDisplay func(*Field) bool) (output []byte, err error) {
+func genInterface(sheet *Sheet, shouldFieldDisplay func(*Field) bool) (output []byte, err error) {
 	var tpl *template.Template
-	tmpl := `export interface I{{capitalize .Name}}Tpl {
+	tmpl := `export interface {{capitalize .Name}}Tpl {
 {{- range .Fields }}
  	{{- if visible . }}
 	{{- $field := . }}
@@ -82,7 +85,7 @@ func genInterface(sheet *Sheet, shouldDisplay func(*Field) bool) (output []byte,
 	if tpl, err = template.New("interface").Funcs(template.FuncMap{
 		"capitalize":    xstrings.FirstRuneToUpper,
 		"resolveTsType": resolveTsType,
-		"visible":       shouldDisplay,
+		"visible":       shouldFieldDisplay,
 	}).Parse(tmpl); err != nil {
 		return
 	}
@@ -99,8 +102,4 @@ func resolveTsType(fieldType FieldType) string {
 	default:
 		return "string"
 	}
-}
-
-func visible(f *Field) bool {
-	return false
 }

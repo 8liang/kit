@@ -8,7 +8,6 @@ import (
 
 func TestGenStruct(t *testing.T) {
 	s := &Sheet{
-		PackageName: "templates",
 		Name:        "Test",
 		Fields: []*Field{
 			{
@@ -50,7 +49,7 @@ func TestGenStruct(t *testing.T) {
 		},
 	}
 
-	result, err := genStruct(s, func(f *Field) bool {
+	result, err := genStruct(s,"tpl",  func(f *Field) bool {
 		return true
 	})
 	assert.NoError(t, err)
@@ -60,7 +59,6 @@ func TestGenStruct(t *testing.T) {
 
 func TestGenInterface(t *testing.T) {
 	s := &Sheet{
-		PackageName: "templates",
 		Name:        "Test",
 		Fields: []*Field{
 			{

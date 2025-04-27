@@ -1,7 +1,6 @@
 package excel
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,15 +10,20 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func Export(excelDir, clientDir, serverDir string, opts ...Option) (err error) {
+func Export(excelDir string, opts ...Option) (err error) {
 	_Config = &config{
-		excelDir:    excelDir,
-		clientDir:   clientDir,
-		serverDir:   serverDir,
-		packageName: "templates",
+		excelDir: excelDir,
 	}
 	for _, opt := range opts {
 		opt(_Config)
+	}
+	if len(_Config.jsonConfigs) == 0 {
+		_Config.jsonConfigs = []*schema{
+			{
+				outPath:           filepath.Join(excelDir, "json"),
+				shouldExportField: shouldExportAllField,
+			},
+		}
 	}
 	return process()
 }
@@ -99,40 +103,38 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 }
 
 func saveJsonFiles(sheets []*Sheet) (err error) {
-	bf := bytes.Buffer{}
+	// bf := bytes.Buffer{}
 	for _, sheet := range sheets {
-		for _, f := range []struct {
-			shouldFieldDisplay func(f *Field) bool
-			dirPath            string
-		}{
-			{shouldFieldDisplay: func(f *Field) bool { return strings.Contains(f.Mark, "c")}, dirPath: _Config.clientDir},
-			{shouldFieldDisplay: func(f *Field) bool { return strings.Contains(f.Mark, "s") }, dirPath: _Config.serverDir},
-		} {
-			if err = saveJsonFileUsingSheet(sheet, f.dirPath, f.shouldFieldDisplay); err != nil {
+		for _, cfg := range _Config.jsonConfigs {
+			if err = exportJson(sheet, cfg.outPath, cfg.shouldExportField); err != nil {
 				return
 			}
 		}
-		if err = saveStructFileUsingSheet(sheet, _Config.serverDir); err != nil {
-			return
+
+		for _, cfg := range _Config.schemas {
+			if err = exportSchema(sheet, cfg.outPath, cfg.schemaType, cfg.shouldExportField, cfg.extraArgs); err != nil {
+				return
+			}
 		}
-		var _bytes []byte
-		if _bytes, err = genInterface(sheet, func(f *Field) bool {
-			return strings.Contains(f.Mark, "c")
-		}); err != nil {
-			return
-		}
-		if _, err = bf.Write(_bytes); err != nil {
-			return
-		}
-		if _, err = bf.WriteString("\n"); err != nil {
-			return
-		}
+
+		// var _bytes []byte
+		// if _bytes, err = genInterface(sheet, func(f *Field) bool {
+		// 	return strings.Contains(f.Mark, "c")
+		// }); err != nil {
+		// 	return
+		// }
+		// if _, err = bf.Write(_bytes); err != nil {
+		// 	return
+		// }
+		// if _, err = bf.WriteString("\n"); err != nil {
+		// 	return
+		// }
 	}
-	err = writeFile(filepath.Join(_Config.clientDir, "interfaceTpl.ts"), bf.Bytes())
+	// err = writeFile(filepath.Join(_Config.clientDir, "interfaceTpl.ts"), bf.Bytes())
 	return
 }
 
-func saveJsonFileUsingSheet(sheet *Sheet, dirPath string, shouldFieldDisplay func(f *Field) bool) (err error) {
+func exportJson(sheet *Sheet, dirPath string, shouldFieldDisplay func(f *Field) bool) (err error) {
 	var jsonByte []byte
 	var jsonData []map[string]any
 	if jsonData, err = sheet.ToJson(shouldFieldDisplay); err != nil {
@@ -145,14 +147,32 @@ func saveJsonFileUsingSheet(sheet *Sheet, dirPath string, shouldFieldDisplay fun
 	return
 }
 
-func saveStructFileUsingSheet(sheet *Sheet, dirPath string) (err error) {
+func exportSchema(sheet *Sheet, outPath string, schemaType SchemaType, shouldExportField ShouldExportField, args []string) (err error) {
+	switch schemaType {
+	case SchemaTypeGoStruct:
+		err = exportGoStruct(sheet, outPath, args[0], shouldExportField)
+	case SchemaTypeTsInterface:
+		err = exportTsInterface(sheet, outPath, shouldExportField)
+
+	}
+	return
+}
+
+func exportGoStruct(sheet *Sheet, outPath, packageName string, shouldExportField ShouldExportField) (err error) {
 	var structByte []byte
-	if structByte, err = genStruct(sheet, func(f *Field) bool {
-		return strings.Contains(f.Mark, "s")
-	}); err != nil {
+	if structByte, err = genStruct(sheet, packageName, shouldExportField); err != nil {
 		return
 	}
-	err = writeFile(filepath.Join(dirPath, sheet.Name+".go"), structByte)
+	err = writeFile(filepath.Join(outPath, sheet.Name+".go"), structByte)
+	return
+}
+
+func exportTsInterface(sheet *Sheet, outPath string, shouldExportField ShouldExportField) (err error) {
+	var _bytes []byte
+	if _bytes, err = genInterface(sheet, shouldExportField); err != nil {
+		return
+	}
+	err = writeFile(filepath.Join(outPath, sheet.Name+"Tpl.ts"), _bytes)
 	return
 }
 

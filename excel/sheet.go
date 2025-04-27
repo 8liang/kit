@@ -15,7 +15,6 @@ const (
 
 type Sheet struct {
 	Name        string
-	PackageName string
 	Fields      []*Field
 	Rows        [][]string
 	Direction   Direction
@@ -49,7 +48,6 @@ func (s *Sheet) ReadRowData(i int, shouldFieldDisplay func(f *Field) bool) (item
 
 func parseSheet(name string, direction Direction, rows [][]string) (s *Sheet, err error) {
 	s = &Sheet{
-		PackageName: "templates",
 		Name:        name,
 		Rows:        rows,
 		Direction:   direction,
