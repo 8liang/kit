@@ -10,7 +10,9 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-func Export(excelDir string, opts ...Option) (err error) {
+// ExportToJSON 是一个将数据导出为 JSON 格式的函数。
+// ExportToJSON is a function that exports data to JSON format.
+func ExportToJSON(excelDir string, opts ...Option) (err error) {
 	_Config = &config{
 		excelDir: excelDir,
 	}
@@ -21,12 +23,15 @@ func Export(excelDir string, opts ...Option) (err error) {
 		_Config.jsonConfigs = []*schema{
 			{
 				outPath:           filepath.Join(excelDir, "json"),
-				shouldExportField: shouldExportAllField,
+				shouldExportField: ShouldExportAllField,
 			},
 		}
 	}
 	return process()
 }
+
+// process 是一个处理 Excel 文件并保存为 JSON 的函数。
+// process is a function that processes Excel files and saves them as JSON.
 func process() (err error) {
 	var excelFiles []string
 	var sheets []*Sheet
