@@ -13,14 +13,14 @@ import (
 // ExportToJSON 是一个将数据导出为 JSON 格式的函数。
 // ExportToJSON is a function that exports data to JSON format.
 func ExportToJSON(excelDir string, opts ...Option) (err error) {
-	_Config = &config{
+	cfg = &config{
 		excelDir: excelDir,
 	}
 	for _, opt := range opts {
-		opt(_Config)
+		opt(cfg)
 	}
-	if len(_Config.jsonConfigs) == 0 {
-		_Config.jsonConfigs = []*schema{
+	if len(cfg.jsonConfigs) == 0 {
+		cfg.jsonConfigs = []*schema{
 			{
 				outPath:           filepath.Join(excelDir, "json"),
 				shouldExportField: ShouldExportAllField,
@@ -35,7 +35,7 @@ func ExportToJSON(excelDir string, opts ...Option) (err error) {
 func process() (err error) {
 	var excelFiles []string
 	var sheets []*Sheet
-	if excelFiles, err = fetchExcelFiles(_Config.excelDir); err != nil {
+	if excelFiles, err = fetchExcelFiles(cfg.excelDir); err != nil {
 		return
 	}
 	for _, fileName := range excelFiles {
@@ -60,12 +60,12 @@ func fetchExcelFiles(dir string) ([]string, error) {
 	var excelFiles []string
 	for _, file := range files {
 		if !file.IsDir() && (strings.HasSuffix(file.Name(), ".xls") || strings.HasSuffix(file.Name(), ".xlsx")) && !strings.HasPrefix(file.Name(), "~") {
-			excelFiles = append(excelFiles, filepath.Join(_Config.excelDir, file.Name()))
+			excelFiles = append(excelFiles, filepath.Join(cfg.excelDir, file.Name()))
 		}
 	}
 
 	if len(excelFiles) == 0 {
-		return nil, fmt.Errorf("no excel files found in directory: %s", _Config.excelDir)
+		return nil, fmt.Errorf("no excel files found in directory: %s", cfg.excelDir)
 	}
 	return excelFiles, nil
 }
@@ -110,13 +110,13 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 func saveJsonFiles(sheets []*Sheet) (err error) {
 	// bf := bytes.Buffer{}
 	for _, sheet := range sheets {
-		for _, cfg := range _Config.jsonConfigs {
+		for _, cfg := range cfg.jsonConfigs {
 			if err = exportJson(sheet, cfg.outPath, cfg.shouldExportField); err != nil {
 				return
 			}
 		}
 
-		for _, cfg := range _Config.schemas {
+		for _, cfg := range cfg.schemas {
 			if err = exportSchema(sheet, cfg.outPath, cfg.schemaType, cfg.shouldExportField, cfg.extraArgs); err != nil {
 				return
 			}

@@ -1,0 +1,9 @@
+
+syntax = "proto3";
+package protobuf;
+option go_package = "github.com/8liang/kit/protobuf";
+message Role {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+}

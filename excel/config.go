@@ -1,6 +1,6 @@
 package excel
 
-var _Config *config
+var cfg *config
 
 type SchemaType string
 

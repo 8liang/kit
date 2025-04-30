@@ -1,11 +1,15 @@
 module github.com/8liang/kit
 
-go 1.18
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/golang-module/carbon/v2 v2.3.10
+	github.com/huandu/xstrings v1.5.0
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.8.4
+	github.com/spf13/afero v1.14.0
+	github.com/stretchr/testify v1.9.0
 )
 
 require (
@@ -16,7 +20,7 @@ require (
 	github.com/xuri/nfp v0.0.0-20240318013403-ab9948c2c4a7 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 )
 
 require (
