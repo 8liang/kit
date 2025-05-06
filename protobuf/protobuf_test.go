@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnalyze(t *testing.T) {
-	summary, err := analyze(tesFs, "/kit/protobuf/web/websvc/web.svc.proto", NewDefaultConfig())
+	summary, err := analyze(tesFs, "/kit/protobuf/web/websvc/web.svc.proto", newDefaultConfig())
 	assert.NoError(t, err)
 	assert.Equal(t, "github.com/8liang/kit/protobuf/web/websvc", summary.GoPackage)
 	spew.Dump(summary.Args)

@@ -6,10 +6,12 @@ type Config struct {
 	includePaths []string
 	goPath       string
 	getOutPath   GetOutPath
+	grain        bool
+	debug        bool
 }
 type Option func(c *Config)
 
-type GetOutPath func(dir string) string
+type GetOutPath func(filePath string) string
 
 func WithGetOutPath(getOutPath GetOutPath) Option {
 	return func(c *Config) {
@@ -19,10 +21,22 @@ func WithGetOutPath(getOutPath GetOutPath) Option {
 
 func WithIncludePaths(includePaths ...string) Option {
 	return func(c *Config) {
-		c.includePaths = includePaths
+		c.includePaths = append(c.includePaths, includePaths...)
 	}
 }
 
-func DefaultGetOutPath(dir string) string {
-	return path.Dir(dir)
+func WithDebug() Option {
+	return func(c *Config) {
+		c.debug = true
+	}
+}
+
+func WithGrain() Option {
+	return func(c *Config) {
+		c.grain = true
+	}
+}
+
+func DefaultGetOutPath(filePath string) string {
+	return path.Dir(filePath)
 }

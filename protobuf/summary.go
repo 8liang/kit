@@ -48,12 +48,17 @@ func (s *Summary) prepareArgs(cfg *Config) (err error) {
 		s.Args = append(s.Args, "-I", clause)
 	}
 	s.OutPath = cfg.getOutPath(s.ProtoFile)
-	s.Args = append(s.Args, "--go_out="+s.OutPath,
+	s.Args = append(s.Args,
+		"--go_out="+s.OutPath,
 		"--go_opt=module="+s.GoPackage,
 		"--proto_path="+s.OutPath,
-		"--plugin="+path.Join(cfg.goPath, "bin", "protoc-gen-go-grain"),
-		"--go-grain_out="+s.OutPath,
-		"--go-grain_opt=module="+s.GoPackage,
+
 	)
+	if cfg.grain {
+		s.Args = append(s.Args,
+			"--plugin="+path.Join(cfg.goPath, "bin", "protoc-gen-go-grain"),
+			"--go-grain_out="+s.OutPath,
+			"--go-grain_opt=module="+s.GoPackage)
+	}
 	return
 }

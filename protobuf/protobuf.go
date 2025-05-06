@@ -1,6 +1,7 @@
 package protobuf
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,37 +11,39 @@ import (
 	"github.com/spf13/afero"
 )
 
-func Export(protoDir string, opts ...Option) (err error) {
+func Compile(protoDir string, opts ...Option) (err error) {
 	var cmds []*exec.Cmd
-	var result []byte
 	if cmds, err = GenerateCommands(afero.NewOsFs(), protoDir, opts...); err != nil {
 		return
 	}
 	for _, cmd := range cmds {
-		if result, err = cmd.Output(); err != nil {
+		if _, err = cmd.Output(); err != nil {
+			var _err *exec.ExitError
+			if errors.As(err, &_err) {
+				return fmt.Errorf("%s,%s", err, string(_err.Stderr))
+			}
 			return
 		}
-		fmt.Println(string(result))
 	}
 	return
 }
 
-func NewDefaultConfig() *Config {
+func newDefaultConfig() *Config {
 	cfg := &Config{
 		getOutPath: DefaultGetOutPath,
 		goPath:     os.Getenv("GOPATH"),
 	}
-	cfg.includePaths = append(cfg.includePaths, path.Join(cfg.goPath, "src"))
+	cfg.includePaths = append(cfg.includePaths, ".", path.Join(cfg.goPath, "src"))
 	return cfg
 }
 
 func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exec.Cmd, err error) {
-	cfg := NewDefaultConfig()
+	cfg := newDefaultConfig()
 	for _, opt := range opts {
 		opt(cfg)
 	}
-	files, err := findProtoFiles(af, protoDir)
-	if err != nil {
+	var files []string
+	if files, err = findProtoFiles(af, protoDir); err != nil {
 		return
 	}
 	for _, file := range files {
@@ -48,11 +51,14 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 		if s, err = analyze(af, file, cfg); err != nil {
 			return
 		}
-		cmds = append(cmds, exec.Command("protoc", append(s.Args, s.ProtoFile)...))
+		cmd := exec.Command("protoc", append(s.Args, s.ProtoFile)...)
+		if cfg.debug {
+			fmt.Println(cmd)
+		}
+		cmds = append(cmds, cmd)
 	}
 	return
 }
-
 
 func findProtoFiles(af afero.Fs, protoDir string) (protoFiles []string, err error) {
 	var of afero.File
@@ -79,7 +85,6 @@ func findProtoFiles(af afero.Fs, protoDir string) (protoFiles []string, err erro
 		if strings.HasSuffix(file.Name(), ".proto") {
 			protoFiles = append(protoFiles, path.Join(protoDir, file.Name()))
 		}
-
 	}
 	return
 }
