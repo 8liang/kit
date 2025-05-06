@@ -3,10 +3,9 @@ package protobuf
 import (
 	"fmt"
 	"os"
-	"path"
-	"runtime"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -32,7 +31,9 @@ message Role {
 }
 
 func TestProcess(t *testing.T) {
-	process(tesFs, "/")
+	c, err := GenerateCommands(tesFs, "/")
+	assert.NoError(t, err)
+	fmt.Println(c)
 }
 
 func TestFindProtoFiles(t *testing.T) {
@@ -53,18 +54,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnalyze(t *testing.T) {
-	summary, err := analyze(tesFs, "/kit/protobuf/web/websvc/web.svc.proto")
+	summary, err := analyze(tesFs, "/kit/protobuf/web/websvc/web.svc.proto", NewDefaultConfig())
 	assert.NoError(t, err)
 	assert.Equal(t, "github.com/8liang/kit/protobuf/web/websvc", summary.GoPackage)
-}
-
-func TestProtoc(t *testing.T) {
-	af := afero.NewOsFs()
-	testCfg := NewDefaultConfig()
-	_, currentFile, _, _ := runtime.Caller(0)
-	dir := path.Dir(currentFile)
-	fmt.Println(dir)
-	cmd, err := protoc(af, path.Join(dir, "role.proto"), testCfg)
-	assert.NoError(t, err)
-	fmt.Println(cmd)
+	spew.Dump(summary.Args)
 }

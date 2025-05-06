@@ -4,6 +4,7 @@ import "path"
 
 type Config struct {
 	includePaths []string
+	goPath       string
 	getOutPath   GetOutPath
 }
 type Option func(c *Config)
