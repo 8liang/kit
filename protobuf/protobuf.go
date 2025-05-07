@@ -36,6 +36,7 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 	if files, err = findProtoFiles(af, protoDir); err != nil {
 		return
 	}
+	outPath := map[string]struct{}{}
 	for _, file := range files {
 		var s *Summary
 		if s, err = analyze(af, file, cfg); err != nil {
@@ -46,6 +47,17 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 			fmt.Println(cmd)
 		}
 		cmds = append(cmds, cmd)
+		outPath[s.OutPath] = struct{}{}
+
+	}
+	if cfg.injectTag {
+		for out := range outPath {
+			cmd := exec.Command("protoc-go-inject-tag", "-input="+out+"/*.pb.go")
+			if cfg.debug {
+				fmt.Println(cmd)
+				cmds = append(cmds, cmd)
+			}
+		}
 	}
 	return
 }

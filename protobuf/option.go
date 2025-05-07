@@ -10,7 +10,7 @@ type Config struct {
 	goPath       string
 	getOutPath   GetOutPath
 	grain        bool
-	ts           bool
+	injectTag    bool
 	debug        bool
 }
 
@@ -48,6 +48,12 @@ func WithDebug() Option {
 func WithGrain() Option {
 	return func(c *Config) {
 		c.grain = true
+	}
+}
+
+func WithInjectTag() Option {
+	return func(c *Config) {
+		c.injectTag = true
 	}
 }
 
