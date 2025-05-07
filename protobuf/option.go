@@ -1,14 +1,28 @@
 package protobuf
 
-import "path"
+import (
+	"os"
+	"path"
+)
 
 type Config struct {
 	includePaths []string
 	goPath       string
 	getOutPath   GetOutPath
 	grain        bool
+	ts           bool
 	debug        bool
 }
+
+func newDefaultConfig() *Config {
+	cfg := &Config{
+		getOutPath: DefaultGetOutPath,
+		goPath:     os.Getenv("GOPATH"),
+	}
+	cfg.includePaths = append(cfg.includePaths, ".", path.Join(cfg.goPath, "src"))
+	return cfg
+}
+
 type Option func(c *Config)
 
 type GetOutPath func(filePath string) string

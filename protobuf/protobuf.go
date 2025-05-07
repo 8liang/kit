@@ -3,7 +3,6 @@ package protobuf
 import (
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -26,15 +25,6 @@ func Compile(protoDir string, opts ...Option) (err error) {
 		}
 	}
 	return
-}
-
-func newDefaultConfig() *Config {
-	cfg := &Config{
-		getOutPath: DefaultGetOutPath,
-		goPath:     os.Getenv("GOPATH"),
-	}
-	cfg.includePaths = append(cfg.includePaths, ".", path.Join(cfg.goPath, "src"))
-	return cfg
 }
 
 func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exec.Cmd, err error) {
