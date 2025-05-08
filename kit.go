@@ -2,6 +2,7 @@ package kit
 
 import (
 	"net"
+	"os"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -38,4 +39,13 @@ func ParseAddr(addr string) (host string, port int, err error) {
 		return
 	}
 	return
+}
+
+// IsInDocker 检测是否在Docker中运行
+// IsInDocker checks if the application is running in Docker
+func IsInDocker() bool {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		return true
+	}
+	return false
 }
