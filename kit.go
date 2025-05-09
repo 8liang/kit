@@ -1,6 +1,7 @@
 package kit
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -48,4 +49,16 @@ func IsInDocker() bool {
 		return true
 	}
 	return false
+}
+
+func GetHostname() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		data, errr := os.ReadFile("/etc/hostname")
+		if errr != nil {
+			return "", fmt.Errorf("get hostname error, %v, %w", err, errr)
+		}
+		hostname = string(data)
+	}
+	return hostname, nil
 }
