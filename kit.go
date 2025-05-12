@@ -51,6 +51,16 @@ func IsInDocker() bool {
 	return false
 }
 
+func IsInK8s() bool {
+	// 检查特定的环境变量
+	if os.Getenv("KUBERNETES_SERVICE_HOST") != "" && os.Getenv("KUBERNETES_SERVICE_PORT") != "" {
+		return true
+	} else if _, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount"); err == nil {
+		return true
+	}
+	return false
+}
+
 func GetHostname() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
