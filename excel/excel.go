@@ -2,6 +2,7 @@ package excel
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -99,8 +100,13 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 		if rows, err = file.GetRows(name); err != nil {
 			return
 		}
-		if sheet, err = parseSheet(exportingName, direction, rows); err != nil {
-			return
+		if sheet, err = parseSheet(fileName, exportingName, direction, rows); err != nil {
+			if errors.Is(err, ErrEmptySheet) {
+				err = nil
+				continue
+			} else {
+				return
+			}
 		}
 		sheets = append(sheets, sheet)
 	}

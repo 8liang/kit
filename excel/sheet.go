@@ -14,10 +14,11 @@ const (
 )
 
 type Sheet struct {
-	Name        string
-	Fields      []*Field
-	Rows        [][]string
-	Direction   Direction
+	FileName  string
+	Name      string
+	Fields    []*Field
+	Rows      [][]string
+	Direction Direction
 }
 
 func (s *Sheet) ToJson(fieldsFilter func(f *Field) bool) (data []map[string]any, err error) {
@@ -46,11 +47,12 @@ func (s *Sheet) ReadRowData(i int, shouldFieldDisplay func(f *Field) bool) (item
 	return
 }
 
-func parseSheet(name string, direction Direction, rows [][]string) (s *Sheet, err error) {
+func parseSheet(fileName, name string, direction Direction, rows [][]string) (s *Sheet, err error) {
 	s = &Sheet{
-		Name:        name,
-		Rows:        rows,
-		Direction:   direction,
+		Name:      name,
+		Rows:      rows,
+		Direction: direction,
+		FileName:  fileName,
 	}
 	if s.Direction == DirectionVertical {
 		s.Rows = s.transposeMatrix(rows)
@@ -94,7 +96,10 @@ func (s *Sheet) resolveFieldName() error {
 }
 
 func (s *Sheet) resolveFieldType() (err error) {
-	verticalData := s.transposeMatrix(s.Rows[FieldNameLine+1:len(s.Rows)])
+	verticalData := s.transposeMatrix(s.Rows[FieldNameLine+1 : len(s.Rows)])
+	if len(verticalData) == 0 {
+		return ErrEmptySheet
+	}
 	for i := 0; i < len(s.Fields); i++ {
 		field := s.Fields[i]
 

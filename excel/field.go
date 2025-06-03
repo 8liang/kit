@@ -41,6 +41,13 @@ func (f *Field) parseIFloat(row []string, index int) (value float64, err error) 
 	return
 }
 
+func (f *Field) readString(row []string, index int) (value string) {
+	if len(row) <= index {
+		return ""
+	}
+	return row[index]
+}
+
 func (f *Field) ReadValue(row []string, index int, shouldFieldDisplay func(f *Field) bool) (value any, err error) {
 	switch f.Type {
 	case FieldTypeInt:
@@ -50,7 +57,7 @@ func (f *Field) ReadValue(row []string, index int, shouldFieldDisplay func(f *Fi
 		value, err = f.parseIFloat(row, index)
 		return
 	case FieldTypeString:
-		return row[index], nil
+		return f.readString(row, index), nil
 	case FieldTypeArray:
 		return f.readArrayValue(row, index, shouldFieldDisplay)
 	case FieldTypeObjectArray:
