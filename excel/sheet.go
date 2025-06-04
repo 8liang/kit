@@ -1,5 +1,7 @@
 package excel
 
+import "path/filepath"
+
 const FieldNameLine = 3
 
 const FieldTypeLine = 2
@@ -54,7 +56,7 @@ func parseSheet(fileName, name string, direction Direction, rows [][]string) (s 
 		Name:      name,
 		Rows:      rows,
 		Direction: direction,
-		FileName:  fileName,
+		FileName:  filepath.Base(fileName),
 	}
 	if s.Direction == DirectionVertical {
 		s.Rows = s.transposeMatrix(rows)
