@@ -116,14 +116,14 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 func saveJsonFiles(sheets []*Sheet) (err error) {
 	// bf := bytes.Buffer{}
 	for _, sheet := range sheets {
-		for _, _cfg := range cfg.jsonConfigs {
-			if err = exportJson(sheet, _cfg.outPath, _cfg.hashKey, _cfg.shouldExportField); err != nil {
+		for _, s := range cfg.jsonConfigs {
+			if err = exportJson(sheet, s.outPath, s.hashKey, s.shouldExportField); err != nil {
 				return
 			}
 		}
 
-		for _, _cfg := range cfg.schemas {
-			if err = exportSchema(sheet, _cfg.outPath, _cfg.schemaType, _cfg.shouldExportField, _cfg.extraArgs); err != nil {
+		for _, s := range cfg.schemas {
+			if err = exportSchema(sheet, s); err != nil {
 				return
 			}
 		}
@@ -169,20 +169,20 @@ func exportJson(sheet *Sheet, dirPath string, asHash string, shouldFieldDisplay 
 	return
 }
 
-func exportSchema(sheet *Sheet, outPath string, schemaType SchemaType, shouldExportField ShouldExportField, args []string) (err error) {
-	switch schemaType {
+func exportSchema(sheet *Sheet, s *schema) (err error) {
+	switch s.schemaType {
 	case SchemaTypeGoStruct:
-		err = exportGoStruct(sheet, outPath, args[0], shouldExportField)
+		err = exportGoStruct(sheet, s.outPath, s.extraArgs[0], s.shouldExportField, s.goIntType)
 	case SchemaTypeTsInterface:
-		err = exportTsInterface(sheet, outPath, shouldExportField)
+		err = exportTsInterface(sheet, s.outPath, s.shouldExportField)
 
 	}
 	return
 }
 
-func exportGoStruct(sheet *Sheet, outPath, packageName string, shouldExportField ShouldExportField) (err error) {
+func exportGoStruct(sheet *Sheet, outPath, packageName string, shouldExportField ShouldExportField, intType string) (err error) {
 	var structByte []byte
-	if structByte, err = genStruct(sheet, packageName, shouldExportField); err != nil {
+	if structByte, err = genStruct(sheet, packageName, shouldExportField, intType); err != nil {
 		return
 	}
 	err = writeFile(filepath.Join(outPath, sheet.Name+".go"), structByte)

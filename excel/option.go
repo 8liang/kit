@@ -19,3 +19,9 @@ func WithExtraArgs(args []string) SchemaOption {
 		s.extraArgs = args
 	}
 }
+
+func WithGoIntType(goIntType string) SchemaOption {
+	return func(s *schema) {
+		s.goIntType = goIntType
+	}
+}

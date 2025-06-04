@@ -8,7 +8,7 @@ import (
 	"github.com/huandu/xstrings"
 )
 
-func genStruct(sheet *Sheet, packageName string, shouldFieldDisplay func(*Field) bool) (output []byte, err error) {
+func genStruct(sheet *Sheet, packageName string, shouldFieldDisplay func(*Field) bool, intType string) (output []byte, err error) {
 	var tpl *template.Template
 	tmpl := `
 package {{.PackageName}}
@@ -23,18 +23,18 @@ type {{capitalize .Name}}Tpl struct {
 	{{- $field := . }}
 	{{- if eq .Type "array" }}
 		{{- with index .SubFields 0 }}
-	{{capitalize $field.Name}} []{{.Type}} {{json $field.Name}}
+	{{capitalize $field.Name}} []{{resolveType .Type}} {{json $field.Name}}
 		{{- end }}
 	{{- else if eq .Type "objectArray" }}
 	{{capitalize .Name}} []struct {
 	{{- range .SubFields }}
 		{{- if visible . }}
-		{{capitalize .Name}} {{.Type}} {{json .Name}}
+		{{capitalize .Name}} {{resolveType .Type}} {{json .Name}}
 		{{- end }}
 	{{- end}}
 	} {{json .Name}}
 	{{- else }}
-	{{capitalize .Name}} {{.Type}} {{json .Name}}
+	{{capitalize .Name}} {{resolveType .Type}} {{json .Name}}
 	{{- end }}
 	{{- end}}
 {{- end }}
@@ -50,7 +50,7 @@ type {{capitalize .Name}}Tpl struct {
 	{{- if eq .Type "array" }}
 		{{- with index .SubFields 0 }}
 // Get{{capitalize $field.Name}} returns {{json $field.Name}}
-func (t *{{$structName}}) Get{{capitalize $field.Name}}() []{{.Type}} {
+func (t *{{$structName}}) Get{{capitalize $field.Name}}() []{{resolveType .Type}} {
 	if t == nil {
 		return nil
 	}
@@ -62,7 +62,7 @@ func (t *{{$structName}}) Get{{capitalize $field.Name}}() []{{.Type}} {
 func (t *{{$structName}}) Get{{capitalize .Name}}() []struct {
 	{{- range .SubFields }}
 		{{- if visible . }}
-		{{capitalize .Name}} {{.Type}} {{json .Name}}
+		{{capitalize .Name}} {{resolveType .Type}} {{json .Name}}
 		{{- end }}
 	{{- end }}
 } {
@@ -73,7 +73,7 @@ func (t *{{$structName}}) Get{{capitalize .Name}}() []struct {
 }
 	{{- else }}
 // Get{{capitalize .Name}} returns {{json .Name}}
-func (t *{{$structName}}) Get{{capitalize .Name}}() {{.Type}} {
+func (t *{{$structName}}) Get{{capitalize .Name}}() {{resolveType .Type}} {
 	if t == nil {
 		return {{zeroValue .Type}}
 	}
@@ -90,6 +90,12 @@ func (t *{{$structName}}) Get{{capitalize .Name}}() {{.Type}} {
 		"json":       func(s string) string { return "`json:\"" + s + "\"`" },
 		"visible":    shouldFieldDisplay,
 		"zeroValue":  zeroValue,
+		"resolveType": func(s FieldType) string {
+			if s == FieldTypeInt {
+				return intType
+			}
+			return string(s)
+		},
 	}).Parse(tmpl); err != nil {
 		return
 	}

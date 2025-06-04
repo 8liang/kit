@@ -23,6 +23,7 @@ type schema struct {
 	shouldExportField ShouldExportField
 	schemaType        SchemaType
 	extraArgs         []string
+	goIntType         string
 }
 
 type ShouldExportField func(*Field) bool
@@ -54,6 +55,7 @@ func WithSchemaExport(outPath string, schemaType SchemaType, opts ...SchemaOptio
 			outPath:           outPath,
 			shouldExportField: ShouldExportAllField,
 			schemaType:        schemaType,
+			goIntType:         "int64", // default int type for Go struct
 		}
 		for _, opt := range opts {
 			opt(s)
