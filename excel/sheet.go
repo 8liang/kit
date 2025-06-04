@@ -28,7 +28,9 @@ func (s *Sheet) ToJson(fieldsFilter func(f *Field) bool) (data []map[string]any,
 		if item, err = s.ReadRowData(i, fieldsFilter); err != nil {
 			return
 		}
-		data = append(data, item)
+		if len(item) > 0 {
+			data = append(data, item)
+		}
 	}
 	return
 }

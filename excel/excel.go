@@ -116,42 +116,53 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 func saveJsonFiles(sheets []*Sheet) (err error) {
 	// bf := bytes.Buffer{}
 	for _, sheet := range sheets {
-		for _, cfg := range cfg.jsonConfigs {
-			if err = exportJson(sheet, cfg.outPath, cfg.shouldExportField); err != nil {
+		for _, _cfg := range cfg.jsonConfigs {
+			if err = exportJson(sheet, _cfg.outPath, _cfg.hashKey, _cfg.shouldExportField); err != nil {
 				return
 			}
 		}
 
-		for _, cfg := range cfg.schemas {
-			if err = exportSchema(sheet, cfg.outPath, cfg.schemaType, cfg.shouldExportField, cfg.extraArgs); err != nil {
+		for _, _cfg := range cfg.schemas {
+			if err = exportSchema(sheet, _cfg.outPath, _cfg.schemaType, _cfg.shouldExportField, _cfg.extraArgs); err != nil {
 				return
 			}
 		}
-
-		// var _bytes []byte
-		// if _bytes, err = genInterface(sheet, func(f *Field) bool {
-		// 	return strings.Contains(f.Mark, "c")
-		// }); err != nil {
-		// 	return
-		// }
-		// if _, err = bf.Write(_bytes); err != nil {
-		// 	return
-		// }
-		// if _, err = bf.WriteString("\n"); err != nil {
-		// 	return
-		// }
 	}
-	// err = writeFile(filepath.Join(_Config.clientDir, "interfaceTpl.ts"), bf.Bytes())
 	return
 }
 
-func exportJson(sheet *Sheet, dirPath string, shouldFieldDisplay func(f *Field) bool) (err error) {
+func exportJson(sheet *Sheet, dirPath string, asHash string, shouldFieldDisplay func(f *Field) bool) (err error) {
 	var jsonByte []byte
 	var jsonData []map[string]any
 	if jsonData, err = sheet.ToJson(shouldFieldDisplay); err != nil {
 		return err
 	}
-	if jsonByte, err = json.Marshal(jsonData); err != nil {
+	if len(jsonData) == 0 {
+		return
+	}
+	if asHash != "" {
+		hashData := make(map[string]any)
+		for _, item := range jsonData {
+			id, ok := item[asHash]
+			if !ok {
+				return fmt.Errorf("json data must have '%s' field for hash export: %s|%s", asHash, sheet.FileName, sheet.Name)
+			}
+			switch _id := id.(type) {
+			case int64:
+				hashData[fmt.Sprintf("%d", _id)] = item
+			case float64:
+				hashData[fmt.Sprintf("%d", int64(_id))] = item
+			case string:
+				hashData[_id] = item
+			default:
+				return fmt.Errorf("invalid '%s' type for hash export: %s|%s", asHash, sheet.FileName, sheet.Name)
+			}
+		}
+		jsonByte, err = json.Marshal(hashData)
+	} else {
+		jsonByte, err = json.Marshal(jsonData)
+	}
+	if err != nil {
 		return
 	}
 	err = writeFile(filepath.Join(dirPath, sheet.Name+".json"), jsonByte)

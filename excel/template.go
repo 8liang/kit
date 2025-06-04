@@ -38,11 +38,58 @@ type {{capitalize .Name}}Tpl struct {
 	{{- end }}
 	{{- end}}
 {{- end }}
-}`
+}
+
+
+{{/* 方法生成区 */}}
+{{- $structName := printf "%sTpl" (capitalize .Name) }}
+
+{{- range .Fields }}
+	{{- if visible . }}
+	{{- $field := . }}
+	{{- if eq .Type "array" }}
+		{{- with index .SubFields 0 }}
+// Get{{capitalize $field.Name}} returns {{json $field.Name}}
+func (t *{{$structName}}) Get{{capitalize $field.Name}}() []{{.Type}} {
+	if t == nil {
+		return nil
+	}
+	return t.{{capitalize $field.Name}}
+}
+		{{- end }}
+	{{- else if eq .Type "objectArray" }}
+// Get{{capitalize .Name}} returns {{json .Name}}
+func (t *{{$structName}}) Get{{capitalize .Name}}() []struct {
+	{{- range .SubFields }}
+		{{- if visible . }}
+		{{capitalize .Name}} {{.Type}} {{json .Name}}
+		{{- end }}
+	{{- end }}
+} {
+	if t == nil {
+		return nil
+	}
+	return t.{{capitalize .Name}}
+}
+	{{- else }}
+// Get{{capitalize .Name}} returns {{json .Name}}
+func (t *{{$structName}}) Get{{capitalize .Name}}() {{.Type}} {
+	if t == nil {
+		return {{zeroValue .Type}}
+	}
+	return t.{{capitalize .Name}}
+}
+	{{- end }}
+	{{- end }}
+{{- end }}
+
+
+`
 	if tpl, err = template.New("struct").Funcs(template.FuncMap{
 		"capitalize": xstrings.FirstRuneToUpper,
 		"json":       func(s string) string { return "`json:\"" + s + "\"`" },
 		"visible":    shouldFieldDisplay,
+		"zeroValue":  zeroValue,
 	}).Parse(tmpl); err != nil {
 		return
 	}
@@ -101,5 +148,21 @@ func resolveTsType(fieldType FieldType) string {
 		return "number"
 	default:
 		return "string"
+	}
+}
+
+func zeroValue(typ FieldType) string {
+	switch typ {
+	case "int", "int32", "int64":
+		return "0"
+	case "float32", "float64":
+		return "0.0"
+	case "string":
+		return `""`
+	case "bool":
+		return "false"
+	default:
+		// 默认返回 nil，适用于切片、指针、接口等
+		return "nil"
 	}
 }
