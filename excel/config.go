@@ -18,12 +18,13 @@ type config struct {
 type Option func(*config)
 
 type schema struct {
-	outPath           string
-	hashKey           string
-	shouldExportField ShouldExportField
-	schemaType        SchemaType
-	extraArgs         []string
-	goIntType         string
+	outPath              string
+	hashKey              string
+	shouldExportField    ShouldExportField
+	schemaType           SchemaType
+	extraArgs            []string
+	goIntType            string
+	tolerantHashKeyError bool
 }
 
 type ShouldExportField func(*Field) bool

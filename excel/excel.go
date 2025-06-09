@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -117,7 +118,7 @@ func saveJsonFiles(sheets []*Sheet) (err error) {
 	// bf := bytes.Buffer{}
 	for _, sheet := range sheets {
 		for _, s := range cfg.jsonConfigs {
-			if err = exportJson(sheet, s.outPath, s.hashKey, s.shouldExportField); err != nil {
+			if err = exportJson(sheet, s); err != nil {
 				return
 			}
 		}
@@ -131,42 +132,51 @@ func saveJsonFiles(sheets []*Sheet) (err error) {
 	return
 }
 
-func exportJson(sheet *Sheet, dirPath string, asHash string, shouldFieldDisplay func(f *Field) bool) (err error) {
+//func exportJson(sheet *Sheet, dirPath string, asHash string, shouldFieldDisplay func(f *Field) bool) (err error) {
+func exportJson(sheet *Sheet, s *schema) (err error) {
 	var jsonByte []byte
 	var jsonData []map[string]any
-	if jsonData, err = sheet.ToJson(shouldFieldDisplay); err != nil {
+	if jsonData, err = sheet.ToJson(s.shouldExportField); err != nil {
 		return err
 	}
 	if len(jsonData) == 0 {
 		return
 	}
-	if asHash != "" {
-		hashData := make(map[string]any)
-		for _, item := range jsonData {
-			id, ok := item[asHash]
-			if !ok {
-				return fmt.Errorf("json data must have '%s' field for hash export: %s|%s", asHash, sheet.FileName, sheet.Name)
-			}
-			switch _id := id.(type) {
-			case int64:
-				hashData[fmt.Sprintf("%d", _id)] = item
-			case float64:
-				hashData[fmt.Sprintf("%d", int64(_id))] = item
-			case string:
-				hashData[_id] = item
-			default:
-				return fmt.Errorf("invalid '%s' type for hash export: %s|%s", asHash, sheet.FileName, sheet.Name)
-			}
-		}
-		jsonByte, err = json.Marshal(hashData)
+	if s.hashKey != "" {
+		jsonByte, err = exportHash(sheet, jsonData, s)
 	} else {
 		jsonByte, err = json.Marshal(jsonData)
 	}
 	if err != nil {
 		return
 	}
-	err = writeFile(filepath.Join(dirPath, sheet.Name+".json"), jsonByte)
+	err = writeFile(filepath.Join(s.outPath, sheet.Name+".json"), jsonByte)
 	return
+}
+func exportHash(sheet *Sheet, jsonData []map[string]any, s *schema) (jsonByte []byte, err error) {
+	hashData := make(map[string]any)
+	for _, item := range jsonData {
+		id, ok := item[s.hashKey]
+		if !ok {
+			errStr := fmt.Sprintf("json data must have '%s' field for hash export: %s|%s", s.hashKey, sheet.FileName, sheet.Name)
+			if s.tolerantHashKeyError {
+				slog.Warn(errStr)
+				return json.Marshal(jsonData)
+			}
+			return nil, errors.New(errStr)
+		}
+		switch _id := id.(type) {
+		case int64:
+			hashData[fmt.Sprintf("%d", _id)] = item
+		case float64:
+			hashData[fmt.Sprintf("%d", int64(_id))] = item
+		case string:
+			hashData[_id] = item
+		default:
+			return nil, fmt.Errorf("invalid '%s' type for hash export: %s|%s", s.hashKey, sheet.FileName, sheet.Name)
+		}
+	}
+	return json.Marshal(hashData)
 }
 
 func exportSchema(sheet *Sheet, s *schema) (err error) {

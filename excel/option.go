@@ -2,9 +2,12 @@ package excel
 
 type SchemaOption func(*schema)
 
-func WithHashKey(hashKey string) SchemaOption {
+func WithHashKey(hashKey string, hashTolerance ...bool) SchemaOption {
 	return func(s *schema) {
 		s.hashKey = hashKey
+		if len(hashTolerance) > 0 {
+			s.tolerantHashKeyError = hashTolerance[0]
+		}
 	}
 }
 

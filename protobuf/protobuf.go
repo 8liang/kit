@@ -55,8 +55,8 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 			cmd := exec.Command("protoc-go-inject-tag", "-input="+out+"/*.pb.go")
 			if cfg.debug {
 				fmt.Println(cmd)
-				cmds = append(cmds, cmd)
 			}
+			cmds = append(cmds, cmd)
 		}
 	}
 	return
