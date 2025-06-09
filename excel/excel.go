@@ -159,7 +159,8 @@ func exportHash(sheet *Sheet, jsonData []map[string]any, s *schema) (jsonByte []
 		id, ok := item[s.hashKey]
 		if !ok {
 			if s.tolerantHashKeyError {
-				slog.Warn(fmt.Sprintf("json data does not contain a key named %s, it will be exported in array format.", s.hashKey))
+				slog.Warn(fmt.Sprintf("json 中缺少key: %s, sheet将导出为数组.", s.hashKey),
+					"key", s.hashKey, "file", sheet.FileName, "sheet", sheet.Name)
 				return json.Marshal(jsonData)
 			}
 			return nil, fmt.Errorf("json data must have '%s' field for hash export: %s|%s", s.hashKey, sheet.FileName, sheet.Name)
