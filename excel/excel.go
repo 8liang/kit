@@ -158,12 +158,11 @@ func exportHash(sheet *Sheet, jsonData []map[string]any, s *schema) (jsonByte []
 	for _, item := range jsonData {
 		id, ok := item[s.hashKey]
 		if !ok {
-			errStr := fmt.Sprintf("json data must have '%s' field for hash export: %s|%s", s.hashKey, sheet.FileName, sheet.Name)
 			if s.tolerantHashKeyError {
-				slog.Warn(errStr)
+				slog.Warn(fmt.Sprintf("json data does not contain a key named %s, it will be exported in array format.", s.hashKey))
 				return json.Marshal(jsonData)
 			}
-			return nil, errors.New(errStr)
+			return nil, fmt.Errorf("json data must have '%s' field for hash export: %s|%s", s.hashKey, sheet.FileName, sheet.Name)
 		}
 		switch _id := id.(type) {
 		case int64:
