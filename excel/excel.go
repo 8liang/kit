@@ -119,13 +119,13 @@ func saveJsonFiles(sheets []*Sheet) (err error) {
 	for _, sheet := range sheets {
 		for _, s := range cfg.jsonConfigs {
 			if err = exportJson(sheet, s); err != nil {
-				return
+				return fmt.Errorf("export json for sheet %s,file %s, failed: %w", sheet.Name, sheet.FileName, err)
 			}
 		}
 
 		for _, s := range cfg.schemas {
 			if err = exportSchema(sheet, s); err != nil {
-				return
+				return fmt.Errorf("export schema for sheet %s,file %s, failed: %w", sheet.Name, sheet.FileName, err)
 			}
 		}
 	}

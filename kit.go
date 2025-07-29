@@ -72,3 +72,28 @@ func GetHostname() (string, error) {
 	}
 	return hostname, nil
 }
+
+func Paginate[T int | int32 | int64](totalCount, page, pageSize T) (start, end T, totalPage T, err error) {
+	if page <= 0 || pageSize <= 0 {
+		return 0, 0, 0, ErrParameterInvalid
+	}
+	if totalCount <= 0 {
+		return 0, 0, 0, nil
+	}
+
+	totalPage = totalCount / pageSize
+	if totalCount%pageSize != 0 {
+		totalPage++
+	}
+
+	if page > totalPage {
+		return 0, 0, totalPage, ErrPageOutOfRange
+	}
+
+	start = (page - 1) * pageSize
+	end = start + pageSize
+	if end > totalCount {
+		end = totalCount
+	}
+	return start, end, totalPage, nil
+}
