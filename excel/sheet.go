@@ -107,7 +107,9 @@ func (s *Sheet) resolveFieldType() (err error) {
 	for i := 0; i < len(s.Fields); i++ {
 		field := s.Fields[i]
 
-		field.resolveType(s.Rows[FieldTypeLine], verticalData)
+		if err = field.resolveType(s.Rows[FieldTypeLine], verticalData); err != nil {
+			return
+		}
 	}
 	return
 }

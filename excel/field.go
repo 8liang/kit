@@ -3,6 +3,8 @@ package excel
 import (
 	"strconv"
 	"strings"
+
+	"github.com/8liang/kit"
 )
 
 type FieldType string
@@ -135,7 +137,10 @@ func ParseField(index int, name string) *Field {
 	return f
 }
 
-func (f *Field) resolveType(markRow []string, verticalData [][]string) {
+func (f *Field) resolveType(markRow []string, verticalData [][]string) (err error) {
+	if len(verticalData) <= f.Index {
+		return kit.ErrIndexOutOfRange
+	}
 	columnData := verticalData[f.Index]
 	var typeMark string
 	if len(markRow) > f.Index {
@@ -143,7 +148,9 @@ func (f *Field) resolveType(markRow []string, verticalData [][]string) {
 	}
 	if f.Type == FieldTypeArray || f.Type == FieldTypeObjectArray {
 		for _, sf := range f.SubFields {
-			sf.resolveType(markRow, verticalData)
+			if err = sf.resolveType(markRow, verticalData); err != nil {
+				return
+			}
 		}
 		return
 	}
@@ -161,6 +168,7 @@ func (f *Field) resolveType(markRow []string, verticalData [][]string) {
 		f.detectTypeUsingData(columnData)
 		break
 	}
+	return
 }
 
 func isFloat(s string) bool {

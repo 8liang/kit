@@ -106,6 +106,7 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 				err = nil
 				continue
 			} else {
+				err = fmt.Errorf("file:%s, sheet:%s, %w", fileName, name, err)
 				return
 			}
 		}
