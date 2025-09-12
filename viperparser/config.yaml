@@ -1,0 +1,4 @@
+version: v2.0.5
+public_root: ./public
+web:
+  addr: localhost:8080

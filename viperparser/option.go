@@ -13,3 +13,9 @@ func WithEnvPrefix(envPrefix string) Option {
 		p.envPrefix = envPrefix
 	}
 }
+
+func WithEnvFile(envFile string) Option {
+	return func(p *Parser) {
+		p.envFile = envFile
+	}
+}

@@ -40,7 +40,7 @@ func Parse(opts ...Option) (v *viper.Viper, err error) {
 
 func New() *Parser {
 	return &Parser{
-		viper:     viper.New(),
+		viper:     viper.NewWithOptions(viper.ExperimentalBindStruct()),
 		logger:    slog.Default(),
 		envPrefix: "APP",
 		envFile:   ".env",
