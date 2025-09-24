@@ -93,34 +93,32 @@ func (l *Listener) OffAll(eventType Type) {
 }
 
 // Emit 触发事件，按注册顺序执行所有监听器
-func (l *Listener) Emit(event any) {
-	if e, ok := event.(*Event); ok {
-		var handlersCopy []HandlerInfo
+func (l *Listener) Emit(event *Event) {
+	var handlersCopy []HandlerInfo
 
-		if l.threadSafe {
-			l.mu.RLock()
-			handlers, exists := l.handlers[e.Type()]
-			if !exists {
-				l.mu.RUnlock()
-				return
-			}
-			// 复制处理器切片以避免在执行过程中被修改
-			handlersCopy = make([]HandlerInfo, len(handlers))
-			copy(handlersCopy, handlers)
+	if l.threadSafe {
+		l.mu.RLock()
+		handlers, exists := l.handlers[event.Type()]
+		if !exists {
 			l.mu.RUnlock()
-		} else {
-			handlers, exists := l.handlers[e.Type()]
-			if !exists {
-				return
-			}
-			// 非线程安全模式下直接使用原切片
-			handlersCopy = handlers
+			return
 		}
+		// 复制处理器切片以避免在执行过程中被修改
+		handlersCopy = make([]HandlerInfo, len(handlers))
+		copy(handlersCopy, handlers)
+		l.mu.RUnlock()
+	} else {
+		handlers, exists := l.handlers[event.Type()]
+		if !exists {
+			return
+		}
+		// 非线程安全模式下直接使用原切片
+		handlersCopy = handlers
+	}
 
-		// 按注册顺序执行所有处理器
-		for _, handler := range handlersCopy {
-			handler.Handler(e)
-		}
+	// 按注册顺序执行所有处理器
+	for _, handler := range handlersCopy {
+		handler.Handler(event)
 	}
 }
 
