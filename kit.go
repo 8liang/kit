@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/constraints"
 )
 
 // IP 获取本机非环回IP地址
@@ -96,4 +97,11 @@ func Paginate[T int | int32 | int64](totalCount, page, pageSize T) (start, end T
 		end = totalCount
 	}
 	return start, end, totalPage, nil
+}
+
+func Abs[T constraints.Integer | constraints.Float](x T) T {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
