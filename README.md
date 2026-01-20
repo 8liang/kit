@@ -26,6 +26,11 @@ Network listening tool that supports both TCP and Unix Domain Socket listening m
 
 A general-purpose weighted lottery system that supports adding weighted items and provides random drawing functionality.
 
+### onlinestore - 在线状态管理 | Online Status Management
+基于 Redis Sorted Set 的在线状态存储系统，支持用户心跳记录、在线统计、用户列表查询、分页查询、批量筛选和自动清理离线用户等功能。使用 Option 模式提供灵活的配置方式。
+
+A Redis Sorted Set based online status storage system that supports user heartbeat recording, online statistics, user list queries, pagination, batch filtering, and automatic cleanup of offline users. Uses Option pattern for flexible configuration.
+
 ### random - 随机数生成器 | Random Number Generator
 提供基于种子的随机数生成器，可用于生成确定性的随机序列。
 
@@ -56,6 +61,7 @@ go get github.com/8liang/kit
 - github.com/golang-module/carbon/v2
 - github.com/pkg/errors
 - github.com/xuri/excelize/v2
+- github.com/redis/go-redis/v9
 
 ## 许可证 | License
 MIT License
