@@ -1,6 +1,7 @@
 package event
 
 import (
+	"log/slog"
 	"sync"
 	"sync/atomic"
 )
@@ -155,6 +156,8 @@ func OnTyped[T any](l *Listener, tp Type, call func(d T)) {
 	l.On(tp, func(eventIns *Event) {
 		if payload, ok := Cast[T](eventIns); ok {
 			call(payload)
+		} else {
+			slog.Error("event cast failed", "type", tp, "event", eventIns)
 		}
 	})
 }
