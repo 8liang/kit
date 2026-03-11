@@ -51,12 +51,20 @@ func (l *Lottery[T]) Weight() int {
 }
 
 func (l *Lottery[T]) result(r int) *item[T] {
-	min := 0
+	_min := 0
 	for _, v := range l.pool {
-		min += v.Weight
-		if r < min {
+		_min += v.Weight
+		if r < _min {
 			return v
 		}
 	}
 	return l.pool[0]
+}
+
+func (l *Lottery[T]) Items() map[T]int {
+	items := make(map[T]int, l.total)
+	for _, v := range l.pool {
+		items[v.ID] = v.Weight
+	}
+	return items
 }
