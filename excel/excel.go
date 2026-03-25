@@ -89,26 +89,20 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 	if file, err = excelize.OpenFile(fileName); err != nil {
 		return
 	}
-	var rows [][]string
 	var sheet *Sheet
-	var direction Direction
 	for _, name := range file.GetSheetList() {
-		var exportingName string
-		var shouldExport bool
-		if shouldExport, exportingName, direction = shouldSheetExport(name); !shouldExport {
-			continue
-		}
-		if rows, err = file.GetRows(name); err != nil {
-			return
-		}
-		if sheet, err = parseSheet(fileName, exportingName, direction, rows); err != nil {
+		if sheet, err = parseSheet(fileName, name, file); sheet == nil {
+			if err == nil {
+				continue
+			}
+
 			if errors.Is(err, ErrEmptySheet) {
 				err = nil
 				continue
-			} else {
-				err = fmt.Errorf("file:%s, sheet:%s, %w", fileName, name, err)
-				return
 			}
+			err = fmt.Errorf("file:%s, sheet:%s, %w", fileName, name, err)
+			return
+
 		}
 		sheets = append(sheets, sheet)
 	}

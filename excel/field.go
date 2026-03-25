@@ -15,6 +15,7 @@ const (
 	FieldTypeFloat                 = "float64"
 	FieldTypeArray                 = "array"
 	FieldTypeObjectArray           = "objectArray"
+	FieldTypeTime                  = "time"
 )
 
 type Field struct {
@@ -58,7 +59,7 @@ func (f *Field) ReadValue(row []string, index int, shouldFieldDisplay func(f *Fi
 	case FieldTypeFloat:
 		value, err = f.parseIFloat(row, index)
 		return
-	case FieldTypeString:
+	case FieldTypeString, FieldTypeTime:
 		return f.readString(row, index), nil
 	case FieldTypeArray:
 		return f.readArrayValue(row, index, shouldFieldDisplay)
@@ -164,6 +165,8 @@ func (f *Field) resolveType(markRow []string, verticalData [][]string) (err erro
 	case "string":
 		f.Type = FieldTypeString
 		break
+	case "time":
+		f.Type = FieldTypeTime
 	default:
 		f.detectTypeUsingData(columnData)
 		break

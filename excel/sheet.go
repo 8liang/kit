@@ -1,6 +1,12 @@
 package excel
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/xuri/excelize/v2"
+)
 
 const FieldNameLine = 3
 
@@ -16,11 +22,13 @@ const (
 )
 
 type Sheet struct {
-	FileName  string
-	Name      string
-	Fields    []*Field
-	Rows      [][]string
-	Direction Direction
+	OriginalName string
+	FileName     string
+	Name         string
+	Fields       []*Field
+	Rows         [][]string
+	Direction    Direction
+	File         *excelize.File
 }
 
 func (s *Sheet) ToJson(fieldsFilter func(f *Field) bool) (data []map[string]any, err error) {
@@ -51,12 +59,23 @@ func (s *Sheet) ReadRowData(i int, shouldFieldDisplay func(f *Field) bool) (item
 	return
 }
 
-func parseSheet(fileName, name string, direction Direction, rows [][]string) (s *Sheet, err error) {
+func parseSheet(fileName, name string, file *excelize.File) (s *Sheet, err error) {
+	shouldExport, exportingName, direction := shouldSheetExport(name)
+	if !shouldExport {
+		return
+	}
+
+	var rows [][]string
+	if rows, err = file.GetRows(name); err != nil {
+		return
+	}
 	s = &Sheet{
-		Name:      name,
-		Rows:      rows,
-		Direction: direction,
-		FileName:  filepath.Base(fileName),
+		Name:         exportingName,
+		OriginalName: name,
+		Rows:         rows,
+		Direction:    direction,
+		FileName:     filepath.Base(fileName),
+		File:         file,
 	}
 	if s.Direction == DirectionVertical {
 		s.Rows = s.transposeMatrix(rows)
@@ -66,7 +85,6 @@ func parseSheet(fileName, name string, direction Direction, rows [][]string) (s 
 }
 
 func (s *Sheet) parse() (err error) {
-
 	if err = s.resolveFieldName(); err != nil {
 		return err
 	}
@@ -74,7 +92,46 @@ func (s *Sheet) parse() (err error) {
 		return err
 	}
 	s.resolveFieldVisible()
+	err = s.parseTime()
 	return
+}
+
+func (s *Sheet) parseTime() (err error) {
+	for _, field := range s.Fields {
+		if field.Type != FieldTypeTime {
+			continue
+		}
+		for j, row := range s.Rows {
+			if j <= FieldNameLine {
+				continue
+			}
+			if row[field.Index], err = s.getCellTimeValue(j, field.Index); err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+func (s *Sheet) getCellTimeValue(col, row int) (value string, err error) {
+	if s.Direction == DirectionHorizontal {
+		col, row = row, col
+	}
+	var cell string
+	var strValue string
+	var t time.Time
+	if cell, err = excelize.CoordinatesToCellName(col+1, row+1); err != nil {
+		return
+	}
+	if strValue, err = s.File.GetCellValue(s.OriginalName, cell, excelize.Options{
+		RawCellValue: true,
+	}); err != nil {
+		return
+	}
+	num, _ := strconv.ParseFloat(strValue, 64)
+	if t, err = excelize.ExcelDateToTime(num, false); err != nil {
+		return
+	}
+	return t.Format(time.DateTime), nil
 }
 
 func (s *Sheet) resolveFieldVisible() {

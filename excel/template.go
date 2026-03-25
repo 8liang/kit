@@ -95,6 +95,9 @@ func (t *{{$structName}}) Get{{capitalize .Name}}() {{resolveType .Type}} {
 			if s == FieldTypeInt {
 				return intType
 			}
+			if s == FieldTypeTime {
+				return "string"
+			}
 			return string(s)
 		},
 	}).Parse(tmpl); err != nil {
@@ -168,7 +171,7 @@ func zeroValue(typ FieldType) string {
 		return "0"
 	case "float32", "float64":
 		return "0.0"
-	case "string":
+	case "string", "time":
 		return `""`
 	case "bool":
 		return "false"
