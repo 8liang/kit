@@ -21,6 +21,7 @@ const (
 type Field struct {
 	OrdinalName string
 	Name        string
+	Comment     string
 	Type        FieldType
 	Index       int
 	Rang        [2]int
@@ -127,12 +128,13 @@ func (f *Field) resolveMark(row []string) {
 	}
 }
 
-func ParseField(index int, name string) *Field {
+func ParseField(index int, name, command string) *Field {
 	f := &Field{
 		Index:       index,
 		Name:        name,
 		OrdinalName: name,
 		Rang:        [2]int{0, 0},
+		Comment:     command,
 	}
 	f.parse()
 	return f
@@ -213,7 +215,7 @@ func (f *Field) detectTypeUsingData(data []string) {
 	}
 }
 
-func (f *Field) tryCollectObjectArray(data []string, i int) int {
+func (f *Field) tryCollectObjectArray(data []string) int {
 	for i := f.Index + 1; i < len(data); i++ {
 		if !strings.Contains(data[i], ".") {
 			return i - 1
@@ -241,7 +243,7 @@ func (f *Field) tryCollectObjectArray(data []string, i int) int {
 	return len(data) - 1
 }
 
-func (f *Field) tryCollectArray(data []string, i int) int {
+func (f *Field) tryCollectArray(data []string) int {
 	for i := f.Index + 1; i < len(data); i++ {
 		if f.OrdinalName == data[i] {
 			f.Rang[1] = i
@@ -261,7 +263,9 @@ func (f *Field) parse() {
 			Index:       f.Index,
 			Name:        f.Name,
 			OrdinalName: f.Name,
+			Comment:     f.Comment,
 		})
+		f.Comment = ""
 		return
 	}
 
@@ -274,7 +278,9 @@ func (f *Field) parse() {
 			Index:       f.Index,
 			Name:        tmp[1],
 			OrdinalName: tmp[1],
+			Comment:     f.Comment,
 		})
+		f.Comment = ""
 		return
 	}
 }

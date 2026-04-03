@@ -14,6 +14,8 @@ const FieldTypeLine = 2
 
 const FieldVisibleLine = 1
 
+const FieldComment = 0
+
 type Direction string
 
 const (
@@ -140,16 +142,23 @@ func (s *Sheet) resolveFieldVisible() {
 	}
 }
 
+func Read(row []string, i int) string {
+	if i < len(row) {
+		return row[i]
+	}
+	return ""
+}
 func (s *Sheet) resolveFieldName() error {
 	data := s.Rows[FieldNameLine]
+	commands := s.Rows[FieldComment]
 	s.Fields = []*Field{}
 	for i := 0; i < len(data); i++ {
-		field := ParseField(i, data[i])
+		field := ParseField(i, data[i], Read(commands, i))
 		switch field.Type {
 		case FieldTypeArray:
-			i = field.tryCollectArray(data, i)
+			i = field.tryCollectArray(data)
 		case FieldTypeObjectArray:
-			i = field.tryCollectObjectArray(data, i)
+			i = field.tryCollectObjectArray(data)
 		}
 		s.Fields = append(s.Fields, field)
 	}

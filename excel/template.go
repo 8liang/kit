@@ -24,18 +24,18 @@ type {{capitalize .Name}}Tpl struct {
 	{{- $field := . }}
 	{{- if eq .Type "array" }}
 		{{- with index .SubFields 0 }}
-	{{capitalize $field.Name}} []{{resolveType .Type}} {{json $field.Name}}
+	{{capitalize $field.Name}} []{{resolveType .Type}} {{json $field.Name}} {{comment $field.Comment}}
 		{{- end }}
 	{{- else if eq .Type "objectArray" }}
 	{{capitalize .Name}} []struct {
 	{{- range .SubFields }}
 		{{- if visible . }}
-		{{capitalize .Name}} {{resolveType .Type}} {{json .Name}}
+		{{capitalize .Name}} {{resolveType .Type}} {{json .Name}} {{comment .Comment}}
 		{{- end }}
 	{{- end}}
 	} {{json .Name}}
 	{{- else }}
-	{{capitalize .Name}} {{resolveType .Type}} {{json .Name}}
+	{{capitalize .Name}} {{resolveType .Type}} {{json .Name}} {{comment .Comment}}
 	{{- end }}
 	{{- end}}
 {{- end }}
@@ -89,8 +89,14 @@ func (t *{{$structName}}) Get{{capitalize .Name}}() {{resolveType .Type}} {
 	if tpl, err = template.New("struct").Funcs(template.FuncMap{
 		"capitalize": xstrings.FirstRuneToUpper,
 		"json":       func(s string) string { return "`json:\"" + s + "\"`" },
-		"visible":    shouldFieldDisplay,
-		"zeroValue":  zeroValue,
+		"comment": func(s string) string {
+			if s != "" {
+				return "// " + s
+			}
+			return ""
+		},
+		"visible":   shouldFieldDisplay,
+		"zeroValue": zeroValue,
 		"resolveType": func(s FieldType) string {
 			if s == FieldTypeInt {
 				return intType
