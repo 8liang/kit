@@ -1,10 +1,13 @@
 package excel
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"time"
 
+	"github.com/8liang/kit"
+	"github.com/samber/lo"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -148,7 +151,7 @@ func Read(row []string, i int) string {
 	}
 	return ""
 }
-func (s *Sheet) resolveFieldName() error {
+func (s *Sheet) resolveFieldName() (err error) {
 	data := s.Rows[FieldNameLine]
 	commands := s.Rows[FieldComment]
 	s.Fields = []*Field{}
@@ -162,7 +165,15 @@ func (s *Sheet) resolveFieldName() error {
 		}
 		s.Fields = append(s.Fields, field)
 	}
-	return nil
+	_, err = lo.MapValuesErr(lo.CountValuesBy(s.Fields, func(f *Field) string {
+		return f.Name
+	}), func(value int, key string) (int, error) {
+		if value > 1 {
+			return value, fmt.Errorf("%w, field: %s", kit.ErrDuplicateExcelFieldName, key)
+		}
+		return value, nil
+	})
+	return
 }
 
 func (s *Sheet) resolveFieldType() (err error) {
