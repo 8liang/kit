@@ -6,11 +6,6 @@ This is a toolkit written in Go language, providing multiple practical functiona
 
 ## 功能模块 | Modules
 
-### crosstime - 时间跨越检查 | Time Crossing Check
-基于 timetunnel 的高级封装，提供更简化的时间跨越接口，支持小时、天、周、月的时间跨越检测。
-
-A higher-level wrapper based on timetunnel, providing simplified time crossing interfaces for detecting hour, day, week, and month crossing events.
-
 ### event - 事件封装 | Event Wrapper
 轻量级的事件封装库，提供基本的泛型事件结构，方便在系统各处传递事件类型与负载。
 
