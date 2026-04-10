@@ -3,8 +3,6 @@ package excel
 import (
 	"strconv"
 	"strings"
-
-	"github.com/8liang/kit"
 )
 
 type FieldType string
@@ -142,7 +140,8 @@ func ParseField(index int, name, command string) *Field {
 
 func (f *Field) resolveType(markRow []string, verticalData [][]string) (err error) {
 	if len(verticalData) <= f.Index {
-		return kit.ErrIndexOutOfRange
+		f.Type = FieldTypeInt
+		return
 	}
 	columnData := verticalData[f.Index]
 	var typeMark string

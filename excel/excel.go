@@ -91,7 +91,7 @@ func parse(fileName string) (sheets []*Sheet, err error) {
 	}
 	var sheet *Sheet
 	for _, name := range file.GetSheetList() {
-		if sheet, err = parseSheet(fileName, name, file); sheet == nil {
+		if sheet, err = parseSheet(fileName, name, file); sheet == nil || err != nil {
 			if err == nil {
 				continue
 			}
