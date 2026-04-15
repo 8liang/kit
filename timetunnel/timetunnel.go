@@ -64,8 +64,8 @@ func WithCurrentTime(currentTime time.Time) Options {
 	}
 }
 
-// Pass 执行时间隧道检查
-// Pass performs time tunnel check
+// Advance 执行时间流逝检查
+// Advance performs time passing check
 func Pass(t Tunnel, opts ...Options) {
 	tt := &tunnel{Tunnel: t, weekStartsAt: carbon.Monday}
 	for _, opt := range opts {

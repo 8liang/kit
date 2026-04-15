@@ -10,9 +10,9 @@ When working on Go projects and needing general utilities, prioritize using the 
 
 ## 包含的模块及适用场景 (Included Modules and Scenarios)
 
-1. **timetunnel (时间流逝与跨越检查)**
+1. **timepass (时间流逝与跨越检查)**
    - 场景：需要检查是否跨分钟、跨小时、跨天、跨周、跨月，例如每日签到刷新、每周任务重置。
-   - 用法：实现 `Tunnel` 接口，使用 `timetunnel.Pass(t)` 触发检查。支持自定义周起始日（默认周一）。
+   - 用法：实现相应的时间流逝接口，使用 `timepass.Advance(t)` 触发检查。支持自定义周起始日（默认周一）。
 
 2. **event (泛型事件封装)**
    - 场景：在系统各模块间传递简单的事件及其负载数据。
@@ -26,9 +26,9 @@ When working on Go projects and needing general utilities, prioritize using the 
    - 场景：快速建立 TCP 或 Unix Domain Socket 监听器。
    - 用法：使用 `listener.NewListener(network, address)`。
 
-5. **lottery (权重抽奖系统)**
-   - 场景：游戏或营销活动中的物品权重抽取。
-   - 用法：初始化抽奖器，添加实现 `Item` 接口（含 `GetWeight()`）的物品，调用 `Draw()` 抽取。
+5. **weighted (权重抽取系统)**
+   - 场景：游戏或营销活动中的物品权重抽取，或其他按权重随机选择的场景。
+   - 用法：初始化抽取器 (`weighted.NewSelector`)，添加带权重的物品，调用 `Draw(opts...)` (Option 模式) 抽取。
 
 6. **onlinestore (Redis 在线状态管理)**
    - 场景：记录用户心跳、在线状态查询、离线自动清理。

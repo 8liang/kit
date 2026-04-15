@@ -21,10 +21,10 @@ Provides Excel file read and write functionality, supports exporting Excel data 
 
 Network listening tool that supports both TCP and Unix Domain Socket listening methods.
 
-### lottery - 抽奖系统 | Lottery System
-通用的权重抽奖系统，支持添加带权重的物品，并提供随机抽取功能。
+### weighted - 权重抽取系统 | Weighted Selector System
+通用的权重抽取系统，支持添加带权重的物品，并提供灵活配置的随机抽取功能。
 
-A general-purpose weighted lottery system that supports adding weighted items and provides random drawing functionality.
+A general-purpose weighted selector system that supports adding weighted items and provides random drawing functionality with flexible options.
 
 ### onlinestore - 在线状态管理 | Online Status Management
 基于 Redis Sorted Set 的在线状态存储系统，支持用户心跳记录、在线统计、用户列表查询、分页查询、批量筛选和自动清理离线用户等功能。使用 Option 模式提供灵活的配置方式。
@@ -46,7 +46,7 @@ Provides a seed-based random number generator for generating deterministic rando
 
 A tool for parsing Go structs with generic support.
 
-### timetunnel - 时间隧道 | Time Tunnel
+### timepass - 时间流逝检查 | Time Passing Check
 时间流逝检查工具，通过比对上一次访问时间与当前时间，依次触发分钟、小时、天、周、月的时间流逝事件。支持自定义周起始日。
 
 A time-lapse check tool that compares the last access time with the current time to sequentially trigger minute, hour, day, week, and month passing events. Supports custom week start day.

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 )
 
-// NewLottery create a new lottery pool
+// NewSelector create a new weighted pool
 func NewLottery[T comparable]() *Lottery[T] {
 	var l Lottery[T]
 	return &l
@@ -18,14 +18,14 @@ type Lottery[T comparable] struct {
 
 type Roller func(int) int
 
-// AddItem add an item for Lottery draw
+// AddItem add an item for weighted draw
 func (l *Lottery[T]) AddItem(ID T, weight int) {
 	l.total++
 	l.weight += weight
 	l.pool = append(l.pool, newItem(ID, weight))
 }
 
-// Draw draw a lottery
+// Draw draw a weighted item
 func (l *Lottery[T]) Draw(random ...Roller) T {
 	var roller Roller
 	if len(random) == 0 {
