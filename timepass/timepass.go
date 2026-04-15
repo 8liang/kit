@@ -64,8 +64,8 @@ func WithCurrentTime(currentTime time.Time) Option {
 	}
 }
 
-// Advance 执行时间隧道检查
-// Advance performs time tunnel check
+// Advance 执行时间流逝检查
+// Advance performs time-pass check
 func Advance(t Handler, opts ...Option) {
 	tt := &handler{Handler: t, weekStartsAt: carbon.Monday}
 	for _, opt := range opts {

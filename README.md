@@ -21,10 +21,10 @@ Provides Excel file read and write functionality, supports exporting Excel data 
 
 Network listening tool that supports both TCP and Unix Domain Socket listening methods.
 
-### lottery - 抽奖系统 | Lottery System
-通用的权重抽奖系统，支持添加带权重的物品，并提供随机抽取功能。
+### weighted - 权重选择器 | Weighted Selector
+通用的权重随机选择器，支持添加带权重的元素，并提供按权重随机选择功能（`Selector.Add` / `Selector.Draw`，`Draw` 支持 Option 模式）。
 
-A general-purpose weighted lottery system that supports adding weighted items and provides random drawing functionality.
+A general-purpose weighted random selector that supports adding weighted items and selecting by weight (`Selector.Add` / `Selector.Draw`, `Draw` supports Option pattern).
 
 ### onlinestore - 在线状态管理 | Online Status Management
 基于 Redis Sorted Set 的在线状态存储系统，支持用户心跳记录、在线统计、用户列表查询、分页查询、批量筛选和自动清理离线用户等功能。使用 Option 模式提供灵活的配置方式。
@@ -46,10 +46,10 @@ Provides a seed-based random number generator for generating deterministic rando
 
 A tool for parsing Go structs with generic support.
 
-### timetunnel - 时间隧道 | Time Tunnel
-时间流逝检查工具，通过比对上一次访问时间与当前时间，依次触发分钟、小时、天、周、月的时间流逝事件。支持自定义周起始日。
+### timepass - 时间流逝检查 | Time Pass
+时间流逝检查工具，通过比对上一次访问时间与当前时间，依次触发分钟、小时、天、周、月的跨越事件。支持自定义周起始日（`timepass.Advance`）。
 
-A time-lapse check tool that compares the last access time with the current time to sequentially trigger minute, hour, day, week, and month passing events. Supports custom week start day.
+A time-pass check tool that compares the last access time with the current time to trigger minute/hour/day/week/month crossing events. Supports custom week start day (`timepass.Advance`).
 
 ### viperparser - 配置解析器 | Configuration Parser
 基于 Viper 的配置解析工具，支持从本地文件、`.env` 文件、HTTP/HTTPS、以及 etcd3 等多种远程数据源加载和解析配置文件，使用更加简便。

@@ -21,9 +21,9 @@ When working on Go projects and needing general utilities, prioritize using the 
    - 场景：快速建立 TCP 或 Unix Domain Socket 监听器。
    - 用法：使用 `listener.NewListener(network, address)`。
 
-5. **lottery (权重抽奖系统)**
-   - 场景：游戏或营销活动中的物品权重抽取。
-   - 用法：初始化抽奖器，添加实现 `Item` 接口（含 `GetWeight()`）的物品，调用 `Draw()` 抽取。
+5. **weighted (权重选择器 / 权重抽取)**
+   - 场景：游戏或营销活动中的物品权重抽取、按权重随机选择。
+   - 用法：使用 `weighted.New[T]()` 创建 `Selector[T]`，通过 `Add(id, weight)` 添加元素，通过 `Draw(opts...)` 按权重抽取；`Draw` 支持 Option 模式，例如 `weighted.WithRand(customRoller)` 自定义随机函数。
 
 6. **onlinestore (Redis 在线状态管理)**
    - 场景：记录用户心跳、在线状态查询、离线自动清理。

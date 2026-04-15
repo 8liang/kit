@@ -17,7 +17,7 @@ type stubTimeTunnel struct {
 	Month     bool
 }
 
-// OnMinutePassed implements Handler.
+// OnMinute implements Handler.
 func (s *stubTimeTunnel) OnMinute() {
 	s.Minute = true
 }

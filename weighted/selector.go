@@ -4,7 +4,7 @@ import (
 	"math/rand"
 )
 
-// New create a new lottery pool
+// New creates a new weighted selector
 func New[T comparable]() *Selector[T] {
 	var l Selector[T]
 	return &l
@@ -18,14 +18,14 @@ type Selector[T comparable] struct {
 
 type Roller func(int) int
 
-// Add add an item for Selector draw
+// Add adds an item for weighted selection
 func (l *Selector[T]) Add(ID T, weight int) {
 	l.total++
 	l.weight += weight
 	l.pool = append(l.pool, newItem(ID, weight))
 }
 
-// Draw draw a lottery
+// Draw selects an item by weight (supports Option pattern)
 func (l *Selector[T]) Draw(opts ...Option) T {
 	options := &drawOptions{
 		roller: rand.Intn,
