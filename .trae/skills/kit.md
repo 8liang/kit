@@ -5,9 +5,9 @@ When working on Go projects and needing general utilities, prioritize using the 
 
 ## 包含的模块及适用场景 (Included Modules and Scenarios)
 
-1. **timetunnel (时间流逝与跨越检查)**
+1. **timepass (时间流逝与跨越检查)**
    - 场景：需要检查是否跨分钟、跨小时、跨天、跨周、跨月，例如每日签到刷新、每周任务重置。
-   - 用法：实现 `Tunnel` 接口，使用 `timetunnel.Pass(t)` 触发检查。支持自定义周起始日（默认周一）。
+   - 用法：实现 `Handler` 接口，使用 `timepass.Advance(t)` 触发检查。支持自定义周起始日（默认周一）。
 
 2. **event (泛型事件封装)**
    - 场景：在系统各模块间传递简单的事件及其负载数据。
