@@ -1,4 +1,4 @@
-package timetunnel
+package timepass
 
 type Period string
 

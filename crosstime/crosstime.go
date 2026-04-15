@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/8liang/kit/timetunnel"
+	"github.com/8liang/kit/timepass"
 	"github.com/golang-module/carbon/v2"
 )
 
 type TimeCrosser interface {
-	GetTouchedAt() time.Time
+	LastTouchedAt() time.Time
 	SetTouchedAt(time.Time)
 	CrossHour()
 	CrossDay()
@@ -21,23 +21,23 @@ type tunnel struct {
 	TimeCrosser
 }
 
-func (t *tunnel) OnMinutePassed() {
+func (t *tunnel) OnMinute() {
 	fmt.Printf("crosstime tunnel OnMinutePassed\n")
 }
 
-func (t *tunnel) OnHourPassed() {
+func (t *tunnel) OnHour() {
 	t.CrossHour()
 }
 
-func (t *tunnel) OnDayPassed() {
+func (t *tunnel) OnDay() {
 	t.CrossDay()
 }
 
-func (t *tunnel) OnWeekPassed() {
+func (t *tunnel) OnWeek() {
 	t.CrossWeek()
 }
 
-func (t *tunnel) OnMonthPassed() {
+func (t *tunnel) OnMonth() {
 	t.CrossMonth()
 }
 
@@ -51,5 +51,5 @@ func Cross(c TimeCrosser) {
 // CrossWithWeekStartsAt performs time crossing check with specified week start day
 func CrossWithWeekStartsAt(c TimeCrosser, weekStartsAt string) {
 	tt := &tunnel{TimeCrosser: c}
-	timetunnel.Pass(tt, timetunnel.WithWeekStartsAt(weekStartsAt))
+	timepass.Advance(tt, timepass.WithWeekStartsAt(weekStartsAt))
 }

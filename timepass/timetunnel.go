@@ -1,4 +1,4 @@
-package timetunnel
+package timepass
 
 import (
 	"time"
@@ -6,68 +6,68 @@ import (
 	"github.com/golang-module/carbon/v2"
 )
 
-type Tunnel interface {
-	GetTouchedAt() time.Time
+type Handler interface {
+	LastTouchedAt() time.Time
 	SetTouchedAt(time.Time)
-	OnMinutePassed()
-	OnHourPassed()
-	OnDayPassed()
-	OnWeekPassed()
-	OnMonthPassed()
+	OnMinute()
+	OnHour()
+	OnDay()
+	OnWeek()
+	OnMonth()
 }
 
 type EmptyTunnel struct{}
 
-func (e *EmptyTunnel) GetTouchedAt() time.Time {
+func (e *EmptyTunnel) LastTouchedAt() time.Time {
 	return time.Now()
 }
 
 func (e *EmptyTunnel) SetTouchedAt(t time.Time) {
 }
 
-func (e *EmptyTunnel) OnMinutePassed() {
+func (e *EmptyTunnel) OnMinute() {
 }
 
-func (e *EmptyTunnel) OnHourPassed() {
+func (e *EmptyTunnel) OnHour() {
 }
 
-func (e *EmptyTunnel) OnDayPassed() {
+func (e *EmptyTunnel) OnDay() {
 }
 
-func (e *EmptyTunnel) OnWeekPassed() {
+func (e *EmptyTunnel) OnWeek() {
 }
 
-func (e *EmptyTunnel) OnMonthPassed() {
+func (e *EmptyTunnel) OnMonth() {
 }
 
-type Options func(t *tunnel)
+type Option func(t *handler)
 
-type tunnel struct {
-	Tunnel
+type handler struct {
+	Handler
 	weekStartsAt string
 	current      time.Time
 }
 
 // WithWeekStartsAt 设置周起始日选项
 // WithWeekStartsAt sets the week start day option
-func WithWeekStartsAt(weekStartsAt string) Options {
-	return func(t *tunnel) {
+func WithWeekStartsAt(weekStartsAt string) Option {
+	return func(t *handler) {
 		t.weekStartsAt = weekStartsAt
 	}
 }
 
 // WithCurrentTime 设置当前时间选项
 // WithCurrentTime sets the current time option
-func WithCurrentTime(currentTime time.Time) Options {
-	return func(t *tunnel) {
+func WithCurrentTime(currentTime time.Time) Option {
+	return func(t *handler) {
 		t.current = currentTime
 	}
 }
 
-// Pass 执行时间隧道检查
-// Pass performs time tunnel check
-func Pass(t Tunnel, opts ...Options) {
-	tt := &tunnel{Tunnel: t, weekStartsAt: carbon.Monday}
+// Advance 执行时间隧道检查
+// Advance performs time tunnel check
+func Advance(t Handler, opts ...Option) {
+	tt := &handler{Handler: t, weekStartsAt: carbon.Monday}
 	for _, opt := range opts {
 		opt(tt)
 	}
@@ -75,35 +75,35 @@ func Pass(t Tunnel, opts ...Options) {
 	passThrough(tt, last, current)
 }
 
-func passThrough(tt Tunnel, last, current carbon.Carbon) {
+func passThrough(tt Handler, last, current carbon.Carbon) {
 	if last.IsSameMinute(current) {
 		return
 	}
-	tt.OnMinutePassed()
+	tt.OnMinute()
 	if last.IsSameHour(current) {
 		return
 	}
-	tt.OnHourPassed()
+	tt.OnHour()
 
 	if last.IsSameDay(current) {
 		return
 	}
-	tt.OnDayPassed()
+	tt.OnDay()
 
 	if !last.StartOfWeek().IsSameDay(current.StartOfWeek()) {
-		tt.OnWeekPassed()
+		tt.OnWeek()
 	}
 
 	if !last.StartOfMonth().IsSameDay(current.StartOfMonth()) {
-		tt.OnMonthPassed()
+		tt.OnMonth()
 	}
 }
 
-func touch(c *tunnel) (carbon.Carbon, carbon.Carbon) {
+func touch(c *handler) (carbon.Carbon, carbon.Carbon) {
 	if c.current.IsZero() {
 		c.current = time.Now()
 	}
-	last := c.GetTouchedAt()
+	last := c.LastTouchedAt()
 	c.SetTouchedAt(c.current)
 
 	return carbon.CreateFromStdTime(last.Local()).SetWeekStartsAt(c.weekStartsAt),
