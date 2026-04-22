@@ -6,8 +6,9 @@ The `dlock` package provides a unified and robust interface for managing distrib
 - **Unified Interface**: Use the same `Locker` and `Lock` interface regardless of the underlying storage.
 - **Context Aware**: Fully respects `context.Context` for cancellation and timeouts.
 - **Auto-Retry**: The `Lock` method automatically retries acquiring the lock until it succeeds or the context expires.
-- **Refreshable TTL**: Extend the lifetime of an acquired lock easily via the `Refresh` method.
-- **Safe Unlocking**: Uses unique tokens per lock to guarantee that a lock can only be released or refreshed by its owner.
+- **Auto-Renewal (Watchdog)**: Automatically extends the lifetime of an acquired lock in the background while it is held.
+- **Lock Loss Awareness**: Provides a `Done()` channel and `Valid()` method to immediately detect if the lock is lost due to network partitions or backend failures.
+- **Safe & Idempotent Unlocking**: Unlocking is strictly idempotent and safely cleans up background watchdog goroutines or sessions.
 
 ## Installation & Import
 
@@ -52,6 +53,14 @@ if err != nil {
 defer lock.Unlock(ctx)
 
 // Do your critical section work here...
+// You can use a select block to ensure you abort if the lock is lost:
+select {
+case <-lock.Done():
+    // The lock was lost (e.g. etcd session expired, Redis disconnected)
+    return fmt.Errorf("lock lost during processing")
+default:
+    // Safe to process
+}
 ```
 
 ### 2. Non-blocking Lock (`TryLock`)
@@ -69,19 +78,12 @@ if !ok {
 }
 defer lock.Unlock(ctx)
 
-// Do your critical section work here...
-```
-
-### 3. Refreshing a Lock
-
-If your task takes longer than expected, you can refresh the lock's TTL:
-
-```go
-// Reset the TTL back to the original duration (e.g., 5 seconds)
-err := lock.Refresh(ctx)
-if err != nil {
-    // Handle error (e.g., lock already expired or invalid token)
+// Fast non-blocking check
+if !lock.Valid() {
+    return fmt.Errorf("lock became invalid")
 }
+
+// Do your critical section work here...
 ```
 
 ---
@@ -90,7 +92,7 @@ if err != nil {
 
 ### 1. Redis Backend
 
-The Redis implementation relies on the `SETNX` command and Lua scripts for atomic operations.
+The Redis implementation relies on the `SETNX` command and Lua scripts for atomic operations, accompanied by a background watchdog goroutine for auto-renewal.
 
 ```go
 import (
@@ -109,7 +111,7 @@ var locker dlock.Locker = redislock.New(client)
 
 ### 2. etcd Backend
 
-The etcd implementation utilizes etcd's native leases and transactional (Txn) capabilities.
+The etcd implementation utilizes `concurrency.Session` and `concurrency.Mutex`, which natively support auto-renewal and highly efficient watch-based lock queueing.
 
 ```go
 import (
@@ -128,7 +130,7 @@ var locker dlock.Locker = etcdlock.New(client)
 
 ### 3. MongoDB Backend
 
-The MongoDB backend uses the `_id` field for uniqueness and an upsert pattern. 
+The MongoDB backend uses the `_id` field for uniqueness and an upsert pattern, accompanied by a background watchdog goroutine for auto-renewal.
 
 **Important:** To prevent expired locks from accumulating and wasting space in your database, it is highly recommended to create a TTL index on the `expiresAt` field on your lock collection:
 

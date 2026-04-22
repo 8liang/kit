@@ -88,13 +88,21 @@ Use `dlock` for obtaining distributed locks across different backends:
 import "github.com/8liang/kit/dlock"
 
 // Assuming locker is an initialized dlock.Locker (e.g., Redis, etcd, MongoDB)
-lock, err := locker.Lock(ctx, "my_resource_key", 10*time.Second)
+lock, err := locker.Lock(ctx, "my_resource_key", dlock.WithTTL(10*time.Second))
 if err != nil {
-    // Handle error (e.g., lock already held)
+    // Handle error (e.g., context canceled)
+    return err
 }
 defer lock.Unlock(ctx)
 
-// Critical section
+// Critical section: optionally listen for lock loss
+select {
+case <-lock.Done():
+    // Abort if lock is lost in the background
+    return
+default:
+    // Process safely
+}
 ```
 
 ## Red Flags - STOP and Rethink
