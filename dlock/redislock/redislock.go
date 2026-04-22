@@ -2,6 +2,7 @@ package redislock
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/8liang/kit/dlock"
@@ -30,10 +31,15 @@ type redisLocker struct {
 }
 
 type redisLock struct {
-	client *redis.Client
-	key    string
-	token  string
-	ttl    time.Duration
+	client   *redis.Client
+	key      string
+	token    string
+	ttl      time.Duration
+	doneCh   chan struct{}
+	stopCh   chan struct{}
+	once     sync.Once
+	doneOnce sync.Once
+	err      error
 }
 
 func New(client *redis.Client) dlock.Locker {
@@ -42,7 +48,6 @@ func New(client *redis.Client) dlock.Locker {
 
 func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
 	o := dlock.NewOptions(opts...)
-	
 	ok, err := l.client.SetNX(ctx, key, o.Token, o.TTL).Result()
 	if err != nil {
 		return nil, false, err
@@ -51,17 +56,22 @@ func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 		return nil, false, nil
 	}
 
-	return &redisLock{
+	lock := &redisLock{
 		client: l.client,
 		key:    key,
 		token:  o.Token,
 		ttl:    o.TTL,
-	}, true, nil
+		doneCh: make(chan struct{}),
+		stopCh: make(chan struct{}),
+	}
+
+	lock.startWatchdog()
+	return lock, true, nil
 }
 
 func (l *redisLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
 	o := dlock.NewOptions(opts...)
-	
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
@@ -85,32 +95,54 @@ func (l *redisLocker) Lock(ctx context.Context, key string, opts ...dlock.Option
 	}
 }
 
-func (l *redisLock) Key() string {
-	return l.key
-}
+func (l *redisLock) startWatchdog() {
+	go func() {
+		interval := l.ttl / 3
+		if interval < 1 {
+			interval = 1 * time.Second
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 
-func (l *redisLock) Token() string {
-	return l.token
+		for {
+			select {
+			case <-l.stopCh:
+				return
+			case <-ticker.C:
+				res, err := l.client.Eval(context.Background(), refreshScript, []string{l.key}, l.token, l.ttl.Milliseconds()).Int64()
+				if err != nil || res == 0 {
+					// Lock lost or expired
+					l.doneOnce.Do(func() { close(l.doneCh) })
+					return
+				}
+			}
+		}
+	}()
 }
 
 func (l *redisLock) Unlock(ctx context.Context) error {
-	res, err := l.client.Eval(ctx, unlockScript, []string{l.key}, l.token).Int64()
-	if err != nil {
-		return err
-	}
-	if res == 0 {
-		return dlock.ErrInvalidToken
-	}
-	return nil
+	l.once.Do(func() {
+		close(l.stopCh)
+		res, err := l.client.Eval(ctx, unlockScript, []string{l.key}, l.token).Int64()
+		if err != nil {
+			l.err = err
+		} else if res == 0 {
+			l.err = dlock.ErrInvalidToken
+		}
+		l.doneOnce.Do(func() { close(l.doneCh) })
+	})
+	return l.err
 }
 
-func (l *redisLock) Refresh(ctx context.Context) error {
-	res, err := l.client.Eval(ctx, refreshScript, []string{l.key}, l.token, l.ttl.Milliseconds()).Int64()
-	if err != nil {
-		return err
+func (l *redisLock) Valid() bool {
+	select {
+	case <-l.doneCh:
+		return false
+	default:
+		return true
 	}
-	if res == 0 {
-		return dlock.ErrInvalidToken
-	}
-	return nil
+}
+
+func (l *redisLock) Done() <-chan struct{} {
+	return l.doneCh
 }
