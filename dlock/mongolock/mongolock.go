@@ -2,6 +2,7 @@ package mongolock
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/8liang/kit/dlock"
@@ -15,10 +16,14 @@ type mongoLocker struct {
 }
 
 type mongoLock struct {
-	coll  *mongo.Collection
-	key   string
-	token string
-	ttl   time.Duration
+	coll   *mongo.Collection
+	key    string
+	token  string
+	ttl    time.Duration
+	doneCh chan struct{}
+	stopCh chan struct{}
+	once   sync.Once
+	err    error
 }
 
 type lockDoc struct {
@@ -63,12 +68,17 @@ func (l *mongoLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 		return nil, false, err
 	}
 
-	return &mongoLock{
-		coll:  l.coll,
-		key:   key,
-		token: lockOpts.Token,
-		ttl:   lockOpts.TTL,
-	}, true, nil
+	lock := &mongoLock{
+		coll:   l.coll,
+		key:    key,
+		token:  lockOpts.Token,
+		ttl:    lockOpts.TTL,
+		doneCh: make(chan struct{}),
+		stopCh: make(chan struct{}),
+	}
+	
+	lock.startWatchdog()
+	return lock, true, nil
 }
 
 func (l *mongoLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
@@ -95,48 +105,67 @@ func (l *mongoLocker) Lock(ctx context.Context, key string, opts ...dlock.Option
 	}
 }
 
-func (l *mongoLock) Key() string {
-	return l.key
-}
+func (l *mongoLock) startWatchdog() {
+	go func() {
+		interval := l.ttl / 3
+		if interval < 1 {
+			interval = 1 * time.Second
+		}
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
 
-func (l *mongoLock) Token() string {
-	return l.token
+		for {
+			select {
+			case <-l.stopCh:
+				return
+			case <-ticker.C:
+				filter := bson.M{
+					"_id":   l.key,
+					"token": l.token,
+				}
+				update := bson.M{
+					"$set": bson.M{
+						"expiresAt": time.Now().Add(l.ttl),
+					},
+				}
+				res, err := l.coll.UpdateOne(context.Background(), filter, update)
+				if err != nil || res.MatchedCount == 0 {
+					// Lock lost or expired
+					close(l.doneCh)
+					return
+				}
+			}
+		}
+	}()
 }
 
 func (l *mongoLock) Unlock(ctx context.Context) error {
-	filter := bson.M{
-		"_id":   l.key,
-		"token": l.token,
-	}
-
-	res, err := l.coll.DeleteOne(ctx, filter)
-	if err != nil {
-		return err
-	}
-	if res.DeletedCount == 0 {
-		return dlock.ErrInvalidToken
-	}
-	return nil
+	l.once.Do(func() {
+		close(l.stopCh)
+		filter := bson.M{
+			"_id":   l.key,
+			"token": l.token,
+		}
+		res, err := l.coll.DeleteOne(ctx, filter)
+		if err != nil {
+			l.err = err
+		} else if res.DeletedCount == 0 {
+			l.err = dlock.ErrInvalidToken
+		}
+		close(l.doneCh)
+	})
+	return l.err
 }
 
-func (l *mongoLock) Refresh(ctx context.Context) error {
-	filter := bson.M{
-		"_id":   l.key,
-		"token": l.token,
+func (l *mongoLock) Valid() bool {
+	select {
+	case <-l.doneCh:
+		return false
+	default:
+		return true
 	}
+}
 
-	update := bson.M{
-		"$set": bson.M{
-			"expiresAt": time.Now().Add(l.ttl),
-		},
-	}
-
-	res, err := l.coll.UpdateOne(ctx, filter, update)
-	if err != nil {
-		return err
-	}
-	if res.MatchedCount == 0 {
-		return dlock.ErrInvalidToken
-	}
-	return nil
+func (l *mongoLock) Done() <-chan struct{} {
+	return l.doneCh
 }
