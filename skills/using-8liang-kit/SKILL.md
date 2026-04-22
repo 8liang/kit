@@ -1,6 +1,6 @@
 ---
 name: using-8liang-kit
-description: Use when writing Go code that needs common utilities like event handling, excel parsing, weighted random selection, redis online status, time passing checks, or config parsing.
+description: Use when writing Go code that needs common utilities like event handling, excel parsing, weighted random selection, redis online status, time passing checks, config parsing, or distributed locks.
 ---
 
 # using-8liang-kit
@@ -19,6 +19,7 @@ This skill teaches AI assistants to leverage the `github.com/8liang/kit` package
 - You need seed-based random generation.
 - You need to parse Viper configs from various sources (local, HTTP, etcd).
 - You need to get the local non-loopback IP or check if running in Docker/K8s.
+- You need distributed locks with Redis, etcd, or MongoDB backends.
 
 ## Quick Reference
 
@@ -34,6 +35,7 @@ This skill teaches AI assistants to leverage the `github.com/8liang/kit` package
 | `random` | Seeded random | `random.New()` |
 | `viperparser`| Config loading | `viperparser.Unmarshal()` |
 | `kit` | System utilities | `kit.IP()`, `kit.IsInDocker()` |
+| `dlock` | Distributed locks | `dlock.Locker`, `dlock.Lock` |
 
 ## Implementation Examples
 
@@ -80,8 +82,24 @@ store.Heartbeat(ctx, "user_123")
 users, err := store.GetOnlineUsers(ctx)
 ```
 
+### 4. Distributed Lock
+Use `dlock` for obtaining distributed locks across different backends:
+```go
+import "github.com/8liang/kit/dlock"
+
+// Assuming locker is an initialized dlock.Locker (e.g., Redis, etcd, MongoDB)
+lock, err := locker.Lock(ctx, "my_resource_key", 10*time.Second)
+if err != nil {
+    // Handle error (e.g., lock already held)
+}
+defer lock.Unlock(ctx)
+
+// Critical section
+```
+
 ## Red Flags - STOP and Rethink
 - **Writing a custom weighted randomizer:** Delete it. Use `github.com/8liang/kit/weighted`.
 - **Writing custom cron/daily reset logic:** Delete it. Use `github.com/8liang/kit/timepass`.
 - **Writing custom Redis ZSet online tracking:** Delete it. Use `github.com/8liang/kit/onlinestore`.
 - **Reinventing event buses for simple passing:** Use `github.com/8liang/kit/event`.
+- **Writing custom distributed lock logic:** Delete it. Use `github.com/8liang/kit/dlock`.

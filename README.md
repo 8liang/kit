@@ -6,6 +6,11 @@ This is a toolkit written in Go language, providing multiple practical functiona
 
 ## 功能模块 | Modules
 
+### dlock - 分布式锁 | Distributed Lock
+为 Redis、etcd 和 MongoDB 后端提供统一接口的分布式锁。
+
+A distributed lock that provides a unified interface for Redis, etcd, and MongoDB backends.
+
 ### event - 事件封装 | Event Wrapper
 轻量级的事件封装库，提供基本的泛型事件结构，方便在系统各处传递事件类型与负载。
 
