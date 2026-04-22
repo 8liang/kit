@@ -6,6 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	DefaultTTL        = 10 * time.Second
+	DefaultRetryDelay = 50 * time.Millisecond
+)
+
 type Options struct {
 	TTL        time.Duration
 	RetryDelay time.Duration
@@ -28,8 +33,8 @@ func WithToken(token string) Option {
 
 func NewOptions(opts ...Option) *Options {
 	o := &Options{
-		TTL:        10 * time.Second,
-		RetryDelay: 50 * time.Millisecond,
+		TTL:        DefaultTTL,
+		RetryDelay: DefaultRetryDelay,
 		Token:      uuid.NewString(),
 	}
 	for _, opt := range opts {
