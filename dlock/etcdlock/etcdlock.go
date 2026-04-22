@@ -42,8 +42,14 @@ func (l *etcdLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opti
 	options := dlock.NewOptions(opts...)
 	ttlSeconds := getTTLSeconds(options.TTL)
 
-	session, err := concurrency.NewSession(l.client, concurrency.WithTTL(ttlSeconds), concurrency.WithContext(ctx))
+	resp, err := l.client.Grant(ctx, int64(ttlSeconds))
 	if err != nil {
+		return nil, false, err
+	}
+
+	session, err := concurrency.NewSession(l.client, concurrency.WithLease(resp.ID), concurrency.WithContext(context.Background()))
+	if err != nil {
+		_, _ = l.client.Revoke(context.Background(), resp.ID)
 		return nil, false, err
 	}
 
@@ -70,8 +76,14 @@ func (l *etcdLocker) Lock(ctx context.Context, key string, opts ...dlock.Option)
 	options := dlock.NewOptions(opts...)
 	ttlSeconds := getTTLSeconds(options.TTL)
 
-	session, err := concurrency.NewSession(l.client, concurrency.WithTTL(ttlSeconds), concurrency.WithContext(ctx))
+	resp, err := l.client.Grant(ctx, int64(ttlSeconds))
 	if err != nil {
+		return nil, err
+	}
+
+	session, err := concurrency.NewSession(l.client, concurrency.WithLease(resp.ID), concurrency.WithContext(context.Background()))
+	if err != nil {
+		_, _ = l.client.Revoke(context.Background(), resp.ID)
 		return nil, err
 	}
 
