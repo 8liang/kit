@@ -31,15 +31,15 @@ type redisLocker struct {
 }
 
 type redisLock struct {
-	client *redis.Client
-	key    string
-	token  string
-	ttl    time.Duration
-	doneCh chan struct{}
-	stopCh chan struct{}
-	once   sync.Once
+	client   *redis.Client
+	key      string
+	token    string
+	ttl      time.Duration
+	doneCh   chan struct{}
+	stopCh   chan struct{}
+	once     sync.Once
 	doneOnce sync.Once
-	err    error
+	err      error
 }
 
 func New(client *redis.Client) dlock.Locker {
@@ -48,7 +48,6 @@ func New(client *redis.Client) dlock.Locker {
 
 func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
 	o := dlock.NewOptions(opts...)
-
 	ok, err := l.client.SetNX(ctx, key, o.Token, o.TTL).Result()
 	if err != nil {
 		return nil, false, err
@@ -65,7 +64,7 @@ func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 		doneCh: make(chan struct{}),
 		stopCh: make(chan struct{}),
 	}
-	
+
 	lock.startWatchdog()
 	return lock, true, nil
 }

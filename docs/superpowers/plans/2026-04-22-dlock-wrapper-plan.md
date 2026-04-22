@@ -1,3 +1,64 @@
+# dlock Wrapper Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Create generic functional wrappers (`DoWithLock` and `TryDoWithLock`) to reduce boilerplate when acquiring and releasing distributed locks.
+
+**Architecture:** A new file `wrapper.go` will be added to the `dlock` package. It will provide high-level functions that accept a `Locker`, context, key, options, and a closure `fn func() error`. The wrapper will handle lock acquisition, ensure deferred unlocking, and execute the closure.
+
+**Tech Stack:** Go
+
+---
+
+### Task 1: Implement Wrapper Functions
+
+**Files:**
+- Create: `dlock/wrapper.go`
+- Create: `dlock/wrapper_test.go`
+
+- [ ] **Step 1: Write the wrapper code**
+
+Create `dlock/wrapper.go`:
+```go
+package dlock
+
+import (
+	"context"
+)
+
+// DoWithLock acquires the lock, runs the function fn, and safely releases the lock.
+// It returns an error if the lock cannot be acquired, or if fn returns an error.
+func DoWithLock(ctx context.Context, locker Locker, key string, fn func() error, opts ...Option) error {
+	lock, err := locker.Lock(ctx, key, opts...)
+	if err != nil {
+		return err
+	}
+	// Use Background context to ensure unlock succeeds even if the original ctx is canceled
+	defer lock.Unlock(context.Background())
+
+	return fn()
+}
+
+// TryDoWithLock attempts to acquire the lock non-blocking, runs the function fn, and safely releases the lock.
+// It returns a boolean indicating if the lock was acquired, and an error if fn returns an error or backend fails.
+func TryDoWithLock(ctx context.Context, locker Locker, key string, fn func() error, opts ...Option) (bool, error) {
+	lock, ok, err := locker.TryLock(ctx, key, opts...)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, nil
+	}
+	defer lock.Unlock(context.Background())
+
+	return true, fn()
+}
+```
+
+- [ ] **Step 2: Write tests for wrappers**
+
+Create `dlock/wrapper_test.go`:
+```go
 package dlock
 
 import (
@@ -122,18 +183,17 @@ func TestTryDoWithLock(t *testing.T) {
 	assert.Equal(t, locker.tryErr, err)
 	assert.False(t, ok)
 	assert.False(t, called)
-
-	// Test function error
-	locker.tryErr = nil
-	locker.tryOk = true
-	expectedErr := errors.New("fn error")
-	called = false
-	ok, err = TryDoWithLock(context.Background(), locker, "key", func() error {
-		called = true
-		return expectedErr
-	})
-	assert.Equal(t, expectedErr, err)
-	assert.True(t, ok)
-	assert.True(t, called)
-	assert.False(t, locker.locked)
 }
+```
+
+- [ ] **Step 3: Run test to verify it passes**
+
+Run: `go test ./dlock -v`
+Expected: PASS
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add dlock/wrapper.go dlock/wrapper_test.go
+git commit -m "feat(dlock): add wrapper functions DoWithLock and TryDoWithLock"
+```
