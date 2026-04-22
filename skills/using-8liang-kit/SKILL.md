@@ -83,25 +83,20 @@ users, err := store.GetOnlineUsers(ctx)
 ```
 
 ### 4. Distributed Lock
-Use `dlock` for obtaining distributed locks across different backends:
+Use `dlock` for obtaining distributed locks across different backends. Prefer `DoWithLock` to reduce boilerplate:
 ```go
 import "github.com/8liang/kit/dlock"
 
 // Assuming locker is an initialized dlock.Locker (e.g., Redis, etcd, MongoDB)
-lock, err := locker.Lock(ctx, "my_resource_key", dlock.WithTTL(10*time.Second))
-if err != nil {
-    // Handle error (e.g., context canceled)
-    return err
-}
-defer lock.Unlock(ctx)
+err := dlock.DoWithLock(ctx, locker, "my_resource_key", func() error {
+    // Critical section logic
+    // Lock is held here, and will be automatically unlocked when this function returns
+    return nil
+}, dlock.WithTTL(10*time.Second))
 
-// Critical section: optionally listen for lock loss
-select {
-case <-lock.Done():
-    // Abort if lock is lost in the background
-    return
-default:
-    // Process safely
+if err != nil {
+    // Handle lock acquisition failure or function error
+    return err
 }
 ```
 

@@ -25,6 +25,40 @@ import (
 )
 ```
 
+### 3. Wrapper Functions (Recommended)
+
+To reduce boilerplate code for acquiring locks, checking errors, and deferring unlocks, you can use the generic wrapper functions `DoWithLock` and `TryDoWithLock`.
+
+```go
+ctx := context.Background()
+key := "resource-key"
+
+// Automatically handles Lock(), error checking, and defer Unlock()
+err := dlock.DoWithLock(ctx, locker, key, func() error {
+    // Your critical section logic here
+    return nil
+}, dlock.WithTTL(10*time.Second))
+
+if err != nil {
+    // Handle lock acquisition error or function error
+    return err
+}
+```
+
+```go
+// Non-blocking wrapper
+ok, err := dlock.TryDoWithLock(ctx, locker, key, func() error {
+    // Your critical section logic here
+    return nil
+})
+if err != nil {
+    return err // Backend error or function error
+}
+if !ok {
+    return fmt.Errorf("lock already held")
+}
+```
+
 ---
 
 ## Core Usage Guide
