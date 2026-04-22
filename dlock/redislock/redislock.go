@@ -65,12 +65,15 @@ func (l *redisLocker) Lock(ctx context.Context, key string, opts ...dlock.Option
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
+	// Append the generated token to options so we don't generate a new UUID on every retry
+	retryOpts := append(opts, dlock.WithToken(o.Token))
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-timer.C:
-			lock, ok, err := l.TryLock(ctx, key, opts...)
+			lock, ok, err := l.TryLock(ctx, key, retryOpts...)
 			if err != nil {
 				return nil, err
 			}
@@ -91,22 +94,22 @@ func (l *redisLock) Token() string {
 }
 
 func (l *redisLock) Unlock(ctx context.Context) error {
-	res, err := l.client.Eval(ctx, unlockScript, []string{l.key}, l.token).Result()
+	res, err := l.client.Eval(ctx, unlockScript, []string{l.key}, l.token).Int64()
 	if err != nil {
 		return err
 	}
-	if res.(int64) == 0 {
+	if res == 0 {
 		return dlock.ErrInvalidToken
 	}
 	return nil
 }
 
 func (l *redisLock) Refresh(ctx context.Context) error {
-	res, err := l.client.Eval(ctx, refreshScript, []string{l.key}, l.token, l.ttl.Milliseconds()).Result()
+	res, err := l.client.Eval(ctx, refreshScript, []string{l.key}, l.token, l.ttl.Milliseconds()).Int64()
 	if err != nil {
 		return err
 	}
-	if res.(int64) == 0 {
+	if res == 0 {
 		return dlock.ErrInvalidToken
 	}
 	return nil

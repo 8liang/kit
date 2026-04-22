@@ -27,38 +27,37 @@ type lockDoc struct {
 	ExpiresAt time.Time `bson:"expiresAt"`
 }
 
+// New creates a MongoDB-backed Locker.
+// It relies on MongoDB's unique index on `_id` and an upsert pattern.
+// Note: To prevent expired locks from accumulating in the database,
+// it is highly recommended to create a TTL index on the "expiresAt" field.
+// Example: db.collection.createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 })
 func New(collection *mongo.Collection) dlock.Locker {
 	return &mongoLocker{coll: collection}
 }
 
 func (l *mongoLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
-	o := dlock.NewOptions(opts...)
+	lockOpts := dlock.NewOptions(opts...)
 	now := time.Now()
-	expiresAt := now.Add(o.TTL)
+	expiresAt := now.Add(lockOpts.TTL)
 
 	filter := bson.M{
-		"_id": key,
-		"$or": []bson.M{
-			{"expiresAt": bson.M{"$lte": now}},
-			{"_id": bson.M{"$exists": false}},
-		},
+		"_id":       key,
+		"expiresAt": bson.M{"$lte": now},
 	}
 	
 	update := bson.M{
 		"$set": bson.M{
-			"token":     o.Token,
+			"token":     lockOpts.Token,
 			"expiresAt": expiresAt,
 		},
 	}
 
-	upsert := true
-	opt := &options.FindOneAndUpdateOptions{
-		Upsert: &upsert,
-	}
+	updateOpts := options.Update().SetUpsert(true)
 
-	err := l.coll.FindOneAndUpdate(ctx, filter, update, opt).Err()
+	_, err := l.coll.UpdateOne(ctx, filter, update, updateOpts)
 	if err != nil {
-		if err == mongo.ErrNoDocuments || mongo.IsDuplicateKeyError(err) {
+		if mongo.IsDuplicateKeyError(err) {
 			return nil, false, nil
 		}
 		return nil, false, err
@@ -67,14 +66,14 @@ func (l *mongoLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 	return &mongoLock{
 		coll:  l.coll,
 		key:   key,
-		token: o.Token,
-		ttl:   o.TTL,
+		token: lockOpts.Token,
+		ttl:   lockOpts.TTL,
 	}, true, nil
 }
 
 func (l *mongoLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
-	o := dlock.NewOptions(opts...)
-	retryOpts := append(opts, dlock.WithToken(o.Token))
+	lockOpts := dlock.NewOptions(opts...)
+	retryOpts := append(opts, dlock.WithToken(lockOpts.Token))
 	
 	timer := time.NewTimer(0)
 	defer timer.Stop()
@@ -91,7 +90,7 @@ func (l *mongoLocker) Lock(ctx context.Context, key string, opts ...dlock.Option
 			if ok {
 				return lock, nil
 			}
-			timer.Reset(o.RetryDelay)
+			timer.Reset(lockOpts.RetryDelay)
 		}
 	}
 }
@@ -136,7 +135,7 @@ func (l *mongoLock) Refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if res.ModifiedCount == 0 {
+	if res.MatchedCount == 0 {
 		return dlock.ErrInvalidToken
 	}
 	return nil
