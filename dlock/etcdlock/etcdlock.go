@@ -3,6 +3,7 @@ package etcdlock
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/8liang/kit/dlock"
 	clientv3 "go.etcd.io/etcd/client/v3"
@@ -26,16 +27,20 @@ func New(client *clientv3.Client) dlock.Locker {
 	return &etcdLocker{client: client}
 }
 
-func (l *etcdLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
-	options := dlock.NewOptions(opts...)
-
-	ttlSeconds := int(options.TTL.Seconds())
-	if options.TTL.Seconds() > float64(ttlSeconds) {
+func getTTLSeconds(ttl time.Duration) int {
+	ttlSeconds := int(ttl.Seconds())
+	if ttl.Seconds() > float64(ttlSeconds) {
 		ttlSeconds++
 	}
 	if ttlSeconds <= 0 {
-		ttlSeconds = minLeaseTTL
+		return minLeaseTTL
 	}
+	return ttlSeconds
+}
+
+func (l *etcdLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
+	options := dlock.NewOptions(opts...)
+	ttlSeconds := getTTLSeconds(options.TTL)
 
 	session, err := concurrency.NewSession(l.client, concurrency.WithTTL(ttlSeconds), concurrency.WithContext(ctx))
 	if err != nil {
@@ -63,14 +68,7 @@ func (l *etcdLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opti
 
 func (l *etcdLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
 	options := dlock.NewOptions(opts...)
-
-	ttlSeconds := int(options.TTL.Seconds())
-	if options.TTL.Seconds() > float64(ttlSeconds) {
-		ttlSeconds++
-	}
-	if ttlSeconds <= 0 {
-		ttlSeconds = minLeaseTTL
-	}
+	ttlSeconds := getTTLSeconds(options.TTL)
 
 	session, err := concurrency.NewSession(l.client, concurrency.WithTTL(ttlSeconds), concurrency.WithContext(ctx))
 	if err != nil {
@@ -106,11 +104,7 @@ func (l *etcdLock) Unlock(ctx context.Context) error {
 		_ = l.session.Close()
 	}()
 
-	err := l.mutex.Unlock(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+	return l.mutex.Unlock(ctx)
 }
 
 func (l *etcdLock) Refresh(ctx context.Context) error {
