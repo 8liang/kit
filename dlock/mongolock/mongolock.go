@@ -23,6 +23,7 @@ type mongoLock struct {
 	doneCh chan struct{}
 	stopCh chan struct{}
 	once   sync.Once
+	doneOnce sync.Once
 	err    error
 }
 
@@ -131,7 +132,7 @@ func (l *mongoLock) startWatchdog() {
 				res, err := l.coll.UpdateOne(context.Background(), filter, update)
 				if err != nil || res.MatchedCount == 0 {
 					// Lock lost or expired
-					close(l.doneCh)
+					l.doneOnce.Do(func() { close(l.doneCh) })
 					return
 				}
 			}
@@ -152,7 +153,7 @@ func (l *mongoLock) Unlock(ctx context.Context) error {
 		} else if res.DeletedCount == 0 {
 			l.err = dlock.ErrInvalidToken
 		}
-		close(l.doneCh)
+		l.doneOnce.Do(func() { close(l.doneCh) })
 	})
 	return l.err
 }

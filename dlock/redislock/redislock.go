@@ -38,6 +38,7 @@ type redisLock struct {
 	doneCh chan struct{}
 	stopCh chan struct{}
 	once   sync.Once
+	doneOnce sync.Once
 	err    error
 }
 
@@ -112,7 +113,7 @@ func (l *redisLock) startWatchdog() {
 				res, err := l.client.Eval(context.Background(), refreshScript, []string{l.key}, l.token, l.ttl.Milliseconds()).Int64()
 				if err != nil || res == 0 {
 					// Lock lost or expired
-					close(l.doneCh)
+					l.doneOnce.Do(func() { close(l.doneCh) })
 					return
 				}
 			}
@@ -129,7 +130,7 @@ func (l *redisLock) Unlock(ctx context.Context) error {
 		} else if res == 0 {
 			l.err = dlock.ErrInvalidToken
 		}
-		close(l.doneCh)
+		l.doneOnce.Do(func() { close(l.doneCh) })
 	})
 	return l.err
 }
