@@ -45,7 +45,7 @@ func (l *mongoLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 		"_id":       key,
 		"expiresAt": bson.M{"$lte": now},
 	}
-	
+
 	update := bson.M{
 		"$set": bson.M{
 			"token":     lockOpts.Token,
@@ -74,7 +74,7 @@ func (l *mongoLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 func (l *mongoLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
 	lockOpts := dlock.NewOptions(opts...)
 	retryOpts := append(opts, dlock.WithToken(lockOpts.Token))
-	
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
@@ -124,7 +124,7 @@ func (l *mongoLock) Refresh(ctx context.Context) error {
 		"_id":   l.key,
 		"token": l.token,
 	}
-	
+
 	update := bson.M{
 		"$set": bson.M{
 			"expiresAt": time.Now().Add(l.ttl),

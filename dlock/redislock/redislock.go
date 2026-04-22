@@ -42,7 +42,7 @@ func New(client *redis.Client) dlock.Locker {
 
 func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, bool, error) {
 	o := dlock.NewOptions(opts...)
-	
+
 	ok, err := l.client.SetNX(ctx, key, o.Token, o.TTL).Result()
 	if err != nil {
 		return nil, false, err
@@ -61,7 +61,7 @@ func (l *redisLocker) TryLock(ctx context.Context, key string, opts ...dlock.Opt
 
 func (l *redisLocker) Lock(ctx context.Context, key string, opts ...dlock.Option) (dlock.Lock, error) {
 	o := dlock.NewOptions(opts...)
-	
+
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
