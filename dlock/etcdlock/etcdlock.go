@@ -2,7 +2,7 @@ package etcdlock
 
 import (
 	"context"
-	"fmt"
+	"sync"
 	"time"
 
 	"github.com/8liang/kit/dlock"
@@ -21,6 +21,8 @@ type etcdLock struct {
 	token   string
 	session *concurrency.Session
 	mutex   *concurrency.Mutex
+	once    sync.Once
+	err     error
 }
 
 func New(client *clientv3.Client) dlock.Locker {
@@ -103,27 +105,25 @@ func (l *etcdLocker) Lock(ctx context.Context, key string, opts ...dlock.Option)
 	}, nil
 }
 
-func (l *etcdLock) Key() string {
-	return l.key
-}
-
-func (l *etcdLock) Token() string {
-	return l.token
-}
-
 func (l *etcdLock) Unlock(ctx context.Context) error {
-	defer func() {
-		_ = l.session.Close()
-	}()
-
-	return l.mutex.Unlock(ctx)
+	l.once.Do(func() {
+		defer func() {
+			_ = l.session.Close()
+		}()
+		l.err = l.mutex.Unlock(ctx)
+	})
+	return l.err
 }
 
-func (l *etcdLock) Refresh(ctx context.Context) error {
+func (l *etcdLock) Valid() bool {
 	select {
 	case <-l.session.Done():
-		return fmt.Errorf("%w: etcd session expired or closed", dlock.ErrInvalidToken)
+		return false
 	default:
-		return nil
+		return true
 	}
+}
+
+func (l *etcdLock) Done() <-chan struct{} {
+	return l.session.Done()
 }
