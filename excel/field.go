@@ -39,7 +39,7 @@ func (f *Field) parseIFloat(row []string, index int) (value float64, err error) 
 	if len(row) <= index || row[index] == "" {
 		return 0, nil
 	}
-	value, err = strconv.ParseFloat(row[index], 64)
+	value, err = strconv.ParseFloat(strings.TrimSpace(row[index]), 64)
 	return
 }
 
