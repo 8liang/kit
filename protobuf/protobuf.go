@@ -1,7 +1,6 @@
 package protobuf
 
 import (
-	"errors"
 	"fmt"
 	"os/exec"
 	"path"
@@ -10,18 +9,24 @@ import (
 	"github.com/spf13/afero"
 )
 
+// CheckProtoc verifies that protoc is installed and accessible.
+// CheckProtoc 检查 protoc 是否已安装。
+func CheckProtoc() error {
+	if _, err := exec.LookPath("protoc"); err != nil {
+		return fmt.Errorf("protoc not found in PATH: %w\ninstall: https://github.com/protocolbuffers/protobuf/releases", err)
+	}
+	return nil
+}
+
 func Compile(protoDir string, opts ...Option) (err error) {
 	var cmds []*exec.Cmd
 	if cmds, err = GenerateCommands(afero.NewOsFs(), protoDir, opts...); err != nil {
 		return
 	}
 	for _, cmd := range cmds {
-		if _, err = cmd.Output(); err != nil {
-			var _err *exec.ExitError
-			if errors.As(err, &_err) {
-				return fmt.Errorf("%s,%s", err, string(_err.Stderr))
-			}
-			return
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("%s\n%s", err, string(out))
 		}
 	}
 	return
@@ -48,7 +53,6 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 		}
 		cmds = append(cmds, cmd)
 		outPath[s.OutPath] = struct{}{}
-
 	}
 	if cfg.injectTag {
 		for out := range outPath {

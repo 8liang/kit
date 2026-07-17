@@ -52,13 +52,13 @@ func (s *Summary) prepareArgs(cfg *Config) (err error) {
 		"--go_out="+s.OutPath,
 		"--go_opt=module="+s.GoPackage,
 		"--proto_path="+s.OutPath,
-
 	)
-	if cfg.grain {
+	for _, p := range cfg.plugins {
 		s.Args = append(s.Args,
-			"--plugin="+path.Join(cfg.goPath, "bin", "protoc-gen-go-grain"),
-			"--go-grain_out="+s.OutPath,
-			"--go-grain_opt=module="+s.GoPackage)
+			"--plugin="+path.Join(cfg.goPath, "bin", "protoc-gen-"+p.Name),
+			"--"+p.Name+"_out="+p.OutPath,
+			"--"+p.Name+"_opt=module="+p.Module,
+		)
 	}
 	return
 }

@@ -5,11 +5,19 @@ import (
 	"path"
 )
 
+// Plugin describes a protoc plugin to invoke.
+// Plugin 描述一个需要调用的 protoc 插件。
+type Plugin struct {
+	Name    string // plugin name, e.g. "go-grain", "es" — protoc-gen-{Name}
+	OutPath string // output directory for --{Name}_out
+	Module  string // Go module for --{Name}_opt=module={Module}
+}
+
 type Config struct {
 	includePaths []string
 	goPath       string
 	getOutPath   GetOutPath
-	grain        bool
+	plugins      []Plugin
 	injectTag    bool
 	debug        bool
 }
@@ -45,9 +53,12 @@ func WithDebug() Option {
 	}
 }
 
-func WithGrain() Option {
+// WithPlugin registers a protoc plugin.
+// WithPlugin 注册一个 protoc 插件。
+// name: plugin name, e.g. "go-grain" → protoc-gen-go-grain, --go-grain_out, --go-grain_opt=module=...
+func WithPlugin(name, outPath, module string) Option {
 	return func(c *Config) {
-		c.grain = true
+		c.plugins = append(c.plugins, Plugin{Name: name, OutPath: outPath, Module: module})
 	}
 }
 
