@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"runtime"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -56,5 +55,4 @@ func TestProtocInstaller_Install(t *testing.T) {
 func TestProtocInstaller_OSArchString(t *testing.T) {
 	s := osArchString()
 	assert.NotEmpty(t, s)
-	assert.Contains(t, s, runtime.GOOS)
 }

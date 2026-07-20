@@ -129,12 +129,6 @@ type SetupReport struct {
 	MissingCount int // 缺失依赖总数
 }
 
-// cachePath returns the path within the cache directory.
-// cachePath 返回缓存目录内的子路径。
-func cachePath(cacheDir, sub string) string {
-	return filepath.Join(cacheDir, sub)
-}
-
 // Setup detects and optionally installs proto dependencies for the given directory.
 // Setup 检测并可选择安装指定目录的 proto 依赖。
 func Setup(protoDir string, opts ...SetupOption) (*SetupReport, error) {
@@ -185,7 +179,7 @@ func Setup(protoDir string, opts ...SetupOption) (*SetupReport, error) {
 	}
 
 	// 3. 下载 proto 依赖
-	downloader := newProtoDownloader(cfg.cacheDir, cfg.httpClient, cfg.verbose)
+	downloader := newProtoDownloader(cfg.cacheDir, cfg.fs, cfg.httpClient, cfg.verbose)
 	if cfg.install {
 		for _, task := range tasks {
 			if task.url == "" {

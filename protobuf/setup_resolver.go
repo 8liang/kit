@@ -79,7 +79,7 @@ func (r *importResolver) resolveGitHub(importPath string) (url string, source st
 	key := owner + "/" + repo
 	branch, ok := r.branchCache[key]
 	if !ok {
-		branch = "main"
+		branch = "main" // ponytail: 应通过 GitHub API GET /repos/{owner}/{repo} 查询默认分支，避免 master vs main 猜测
 	}
 	url = fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, rest)
 	return url, "github", nil

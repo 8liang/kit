@@ -67,7 +67,7 @@ func TestDownloader_RealFS(t *testing.T) {
 		t.Skip("skipping real filesystem test")
 	}
 	tmpDir := t.TempDir()
-	d := newProtoDownloader(tmpDir, http.DefaultClient, false)
+	d := newProtoDownloader(tmpDir, afero.NewOsFs(), http.DefaultClient, false)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "syntax = \"proto3\";")

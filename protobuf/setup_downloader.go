@@ -20,10 +20,10 @@ type protoDownloader struct {
 
 // newProtoDownloader creates a new protoDownloader.
 // newProtoDownloader 创建新的 protoDownloader。
-func newProtoDownloader(cacheDir string, client *http.Client, verbose bool) *protoDownloader {
+func newProtoDownloader(cacheDir string, fs afero.Fs, client *http.Client, verbose bool) *protoDownloader {
 	return &protoDownloader{
 		cacheDir: cacheDir,
-		fs:       afero.NewOsFs(),
+		fs:       fs,
 		client:   client,
 		verbose:  verbose,
 	}

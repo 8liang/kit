@@ -2,6 +2,7 @@ package protobuf
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -117,6 +118,6 @@ func fileExists(path string) bool {
 	if path == "" {
 		return false
 	}
-	_, err := exec.Command("test", "-f", path).CombinedOutput()
-	return err == nil
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }

@@ -1,8 +1,6 @@
 package protobuf
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,13 +55,6 @@ func TestIsWKT(t *testing.T) {
 }
 
 func TestGetDefaultBranch(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/repos/testowner/testrepo", r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"default_branch": "dev"}`))
-	}))
-	defer ts.Close()
-
 	r := newImportResolver("")
 	r.branchCache["testowner/testrepo"] = "dev"
 	url, source, err := r.resolve("github.com/testowner/testrepo/pkg/file.proto")
