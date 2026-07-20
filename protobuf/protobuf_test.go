@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"strings"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -58,4 +60,25 @@ func TestAnalyze(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "github.com/8liang/kit/protobuf/web/websvc", summary.GoPackage)
 	spew.Dump(summary.Args)
+}
+
+func TestGenerateCommands_WithProtoCache(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	fs.MkdirAll("/proto/.proto-cache/imports/google/protobuf", 0755)
+	afero.WriteFile(fs, "/proto/.proto-cache/imports/google/protobuf/any.proto",
+		[]byte("syntax = \"proto3\";"), 0644)
+
+	afero.WriteFile(fs, "/proto/test.proto", []byte(`
+syntax = "proto3";
+option go_package = "github.com/test/pkg";
+import "google/protobuf/any.proto";
+`), 0644)
+
+	cmds, err := GenerateCommands(fs, "/proto")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, cmds)
+
+	args := strings.Join(cmds[0].Args, " ")
+	assert.Contains(t, args, "-I")
+	assert.Contains(t, args, ".proto-cache/imports")
 }

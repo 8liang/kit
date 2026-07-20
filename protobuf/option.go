@@ -29,6 +29,7 @@ type Config struct {
 	injectTag    bool
 	nonRecursive bool
 	debug        bool
+	protocPath   string // 显式 protoc 路径（如缓存中的），空则用 PATH
 }
 
 func newDefaultConfig() *Config {
