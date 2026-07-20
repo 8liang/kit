@@ -1,6 +1,7 @@
 package protobuf
 
 import (
+	"fmt"
 	"net/http"
 	"path/filepath"
 
@@ -132,4 +133,130 @@ type SetupReport struct {
 // cachePath 返回缓存目录内的子路径。
 func cachePath(cacheDir, sub string) string {
 	return filepath.Join(cacheDir, sub)
+}
+
+// Setup detects and optionally installs proto dependencies for the given directory.
+// Setup 检测并可选择安装指定目录的 proto 依赖。
+func Setup(protoDir string, opts ...SetupOption) (*SetupReport, error) {
+	cfg := newSetupConfig()
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	if cfg.cacheDir == "" {
+		cfg.cacheDir = filepath.Join(protoDir, ".proto-cache")
+	}
+
+	report := &SetupReport{}
+
+	// 1. 扫描 proto 文件
+	var fileMap map[string][]string
+	var err error
+	if cfg.nonRecursive {
+		fileMap, err = scanProtoDirNonRecursive(cfg.fs, protoDir)
+	} else {
+		fileMap, err = scanProtoDir(cfg.fs, protoDir)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("scan proto dir: %w", err)
+	}
+	imports := deduplicateImports(fileMap)
+
+	// 2. 解析 URL
+	resolver := newImportResolver(cfg.protocVersion)
+	type depTask struct {
+		importPath string
+		url        string
+		source     string
+	}
+	var tasks []depTask
+	for _, imp := range imports {
+		if cfg.ignoreImports[imp] {
+			if cfg.verbose {
+				fmt.Printf("  跳过: %s (--ignore-import)\n", imp)
+			}
+			continue
+		}
+		url, source, err := resolver.resolve(imp)
+		if err != nil && cfg.verbose {
+			fmt.Printf("  解析失败: %s: %v\n", imp, err)
+		}
+		tasks = append(tasks, depTask{importPath: imp, url: url, source: source})
+	}
+
+	// 3. 下载 proto 依赖
+	downloader := newProtoDownloader(cfg.cacheDir, cfg.httpClient, cfg.verbose)
+	if cfg.install {
+		for _, task := range tasks {
+			if task.url == "" {
+				report.ProtoDeps = append(report.ProtoDeps, ProtoDepStatus{
+					ImportPath: task.importPath,
+					Source:     task.source,
+				})
+				report.MissingCount++
+				continue
+			}
+			if downloader.isCached(task.importPath) {
+				report.ProtoDeps = append(report.ProtoDeps, ProtoDepStatus{
+					ImportPath: task.importPath,
+					Cached:     true,
+					Source:     task.source,
+				})
+				continue
+			}
+			err := downloader.download(task.importPath, task.url)
+			status := ProtoDepStatus{
+				ImportPath: task.importPath,
+				URL:        task.url,
+				Source:     task.source,
+				Cached:     err == nil,
+			}
+			if err != nil {
+				status.Error = err.Error()
+				report.MissingCount++
+			}
+			report.ProtoDeps = append(report.ProtoDeps, status)
+		}
+	} else {
+		for _, task := range tasks {
+			dep := ProtoDepStatus{
+				ImportPath: task.importPath,
+				URL:        task.url,
+				Source:     task.source,
+				Cached:     downloader.isCached(task.importPath),
+			}
+			if !dep.Cached {
+				report.MissingCount++
+			}
+			report.ProtoDeps = append(report.ProtoDeps, dep)
+		}
+	}
+
+	// 4. 安装 protoc
+	if cfg.install {
+		installer := newProtocInstaller(cfg.cacheDir, cfg.protocVersion, cfg.httpClient, cfg.verbose)
+		binPath, err := installer.install()
+		if err != nil {
+			report.Protoc = ToolStatus{InstallCmd: fmt.Sprintf("download from github: %v", err)}
+			report.MissingCount++
+		} else {
+			report.Protoc = ToolStatus{Found: true, Path: binPath, Version: cfg.protocVersion}
+		}
+	} else {
+		report.Protoc = checkProtoc()
+		if !report.Protoc.Found {
+			report.MissingCount++
+		}
+	}
+
+	// 5. 检查插件
+	for _, name := range KnownPlugins {
+		ps := checkPlugin(name)
+		if !ps.Found {
+			report.MissingCount++
+		}
+		report.Plugins = append(report.Plugins, ps)
+	}
+
+	return report, nil
 }
