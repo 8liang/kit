@@ -82,3 +82,14 @@ import "google/protobuf/any.proto";
 	assert.Contains(t, args, "-I")
 	assert.Contains(t, args, ".proto-cache/imports")
 }
+
+func TestFindProtoCache(t *testing.T) {
+	fs := afero.NewMemMapFs()
+	fs.MkdirAll("/project/proto/.proto-cache/imports", 0755)
+
+	assert.Equal(t, "/project/proto/.proto-cache", findProtoCache(fs, "/project/proto"))
+	assert.Equal(t, "/project/proto/.proto-cache", findProtoCache(fs, "/project/proto/sub"))
+	assert.Equal(t, "/project/proto/.proto-cache", findProtoCache(fs, "/project/proto/sub/deep"))
+	assert.Equal(t, "", findProtoCache(fs, "/project"))
+	assert.Equal(t, "", findProtoCache(fs, "/"))
+}

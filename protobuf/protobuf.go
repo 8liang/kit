@@ -36,13 +36,17 @@ func Compile(protoDir string, opts ...Option) (err error) {
 func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exec.Cmd, err error) {
 	cfg := newDefaultConfig()
 	// 自动探测 .proto-cache/ 并追加 -I 和 protoc 路径
-	// Auto-detect .proto-cache/ and add as -I / protoc path.
-	cacheDir := filepath.Join(protoDir, ".proto-cache")
-	if importsDir := filepath.Join(cacheDir, "imports"); dirExists(af, importsDir) {
-		cfg.includePaths = append(cfg.includePaths, importsDir)
-	}
-	if binPath := filepath.Join(cacheDir, "bin", "protoc"); fileExistsFs(af, binPath) {
-		cfg.protocPath = binPath
+	// 从 protoDir 向上遍历祖先目录查找 .proto-cache/，支持分目录 proto gen 调用。
+	// Auto-detect .proto-cache/ by walking up from protoDir, so subdir proto gen
+	// calls still find the shared cache.
+	cacheDir := findProtoCache(af, protoDir)
+	if cacheDir != "" {
+		if importsDir := filepath.Join(cacheDir, "imports"); dirExists(af, importsDir) {
+			cfg.includePaths = append(cfg.includePaths, importsDir)
+		}
+		if binPath := filepath.Join(cacheDir, "bin", "protoc"); fileExistsFs(af, binPath) {
+			cfg.protocPath = binPath
+		}
 	}
 	for _, opt := range opts {
 		opt(cfg)
@@ -88,6 +92,22 @@ func dirExists(fs afero.Fs, path string) bool {
 func fileExistsFs(fs afero.Fs, path string) bool {
 	info, err := fs.Stat(path)
 	return err == nil && !info.IsDir()
+}
+
+// findProtoCache walks up from dir to find the nearest .proto-cache directory.
+// findProtoCache 从 dir 向上遍历祖先目录查找 .proto-cache。
+func findProtoCache(fs afero.Fs, dir string) string {
+	for {
+		cacheDir := filepath.Join(dir, ".proto-cache")
+		if dirExists(fs, cacheDir) {
+			return cacheDir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
 }
 
 func findProtoFiles(af afero.Fs, protoDir string, cfg *Config) (protoFiles []string, err error) {
