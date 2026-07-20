@@ -37,9 +37,9 @@ A general-purpose weighted random selector that supports adding weighted items a
 A Redis Sorted Set based online status storage system that supports user heartbeat recording, online statistics, user list queries, pagination, batch filtering, and automatic cleanup of offline users. Uses Option pattern for flexible configuration.
 
 ### protobuf - Protobuf 编译工具 | Protobuf Compilation Tool
-用于简化 Protocol Buffers 编译流程的工具包，支持自动发现 `.proto` 文件，并通过 `protoc` 及 `protoc-go-inject-tag` 生成 Go 代码并注入 Tag。
+用于简化 Protocol Buffers 编译流程的工具包，支持自动发现 `.proto` 文件，通过 `protoc` 生成 Go 代码并按 `go_package` 相对 module 分目录输出，支持多插件（如 `protoc-gen-go-grain`、`protoc-gen-es`）按 proto 文件选择性启用，并可通过 `protoc-go-inject-tag` 注入 `@gotags` struct tag。
 
-A toolkit to simplify the Protocol Buffers compilation process. It supports auto-discovering `.proto` files and generating Go code with injected tags via `protoc` and `protoc-go-inject-tag`.
+A toolkit to simplify the Protocol Buffers compilation process. It auto-discovers `.proto` files, generates Go code via `protoc` with output split by `go_package` relative to the module, supports multiple plugins (e.g. `protoc-gen-go-grain`, `protoc-gen-es`) that can be selectively enabled per proto file, and can inject `@gotags` struct tags via `protoc-go-inject-tag`.
 
 ### random - 随机数生成器 | Random Number Generator
 提供基于种子的随机数生成器，可用于生成确定性的随机序列。

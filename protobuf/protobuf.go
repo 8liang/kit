@@ -38,7 +38,7 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 		opt(cfg)
 	}
 	var files []string
-	if files, err = findProtoFiles(af, protoDir); err != nil {
+	if files, err = findProtoFiles(af, protoDir, cfg); err != nil {
 		return
 	}
 	outPath := map[string]struct{}{}
@@ -66,7 +66,7 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 	return
 }
 
-func findProtoFiles(af afero.Fs, protoDir string) (protoFiles []string, err error) {
+func findProtoFiles(af afero.Fs, protoDir string, cfg *Config) (protoFiles []string, err error) {
 	var of afero.File
 	if of, err = af.Open(protoDir); err != nil {
 		return
@@ -81,8 +81,11 @@ func findProtoFiles(af afero.Fs, protoDir string) (protoFiles []string, err erro
 		}
 		filePath := path.Join(protoDir, file.Name())
 		if file.IsDir() {
+			if cfg.nonRecursive {
+				continue
+			}
 			var _files []string
-			if _files, err = findProtoFiles(af, filePath); err != nil {
+			if _files, err = findProtoFiles(af, filePath, cfg); err != nil {
 				return nil, err
 			}
 			protoFiles = append(protoFiles, _files...)

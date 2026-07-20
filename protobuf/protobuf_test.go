@@ -37,7 +37,7 @@ func TestProcess(t *testing.T) {
 }
 
 func TestFindProtoFiles(t *testing.T) {
-	files, err := findProtoFiles(tesFs, "/kit")
+	files, err := findProtoFiles(tesFs, "/kit", newDefaultConfig())
 	assert.NoError(t, err)
 	assert.Equal(t, len(testCases), len(files))
 	for _, file := range files {
