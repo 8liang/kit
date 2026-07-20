@@ -228,13 +228,19 @@ func Setup(protoDir string, opts ...SetupOption) (*SetupReport, error) {
 
 	// 4. 安装 protoc
 	if cfg.install {
-		installer := newProtocInstaller(cfg.cacheDir, cfg.protocVersion, cfg.httpClient, cfg.verbose)
-		binPath, err := installer.install()
-		if err != nil {
-			report.Protoc = ToolStatus{InstallCmd: fmt.Sprintf("download from github: %v", err)}
-			report.MissingCount++
+		// 优先使用 PATH 中的 protoc；不存在才从 GitHub 下载到缓存
+		pathStatus := checkProtoc()
+		if pathStatus.Found {
+			report.Protoc = pathStatus
 		} else {
-			report.Protoc = ToolStatus{Found: true, Path: binPath, Version: cfg.protocVersion}
+			installer := newProtocInstaller(cfg.cacheDir, cfg.protocVersion, cfg.httpClient, cfg.verbose)
+			binPath, err := installer.install()
+			if err != nil {
+				report.Protoc = ToolStatus{InstallCmd: fmt.Sprintf("download from github: %v", err)}
+				report.MissingCount++
+			} else {
+				report.Protoc = ToolStatus{Found: true, Path: binPath, Version: cfg.protocVersion}
+			}
 		}
 	} else {
 		report.Protoc = checkProtoc()
