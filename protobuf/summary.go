@@ -110,5 +110,5 @@ func resolvePluginBinary(cfg *Config, p Plugin) string {
 	if found, err := exec.LookPath(name); err == nil {
 		return found
 	}
-	return path.Join(cfg.goPath, "bin", name)
+	return path.Join(goPathOrDefault(cfg.goPath), "bin", name)
 }

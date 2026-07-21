@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/afero"
 )
@@ -57,8 +58,21 @@ func (d *protoDownloader) download(importPath, url string) error {
 	}
 	defer resp.Body.Close()
 
+	actuallyUsed := url
+	if resp.StatusCode == http.StatusNotFound && strings.Contains(url, "/main/") {
+		if d.verbose {
+			fmt.Printf("  404 on main branch, retrying with master: %s\n", url)
+		}
+		fallbackURL := strings.Replace(url, "/main/", "/master/", 1)
+		resp.Body.Close()
+		resp, err = d.client.Get(fallbackURL)
+		if err != nil {
+			return fmt.Errorf("download (master fallback) %s: %w", fallbackURL, err)
+		}
+		actuallyUsed = fallbackURL
+	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download %s: HTTP %d", url, resp.StatusCode)
+		return fmt.Errorf("download %s: HTTP %d", actuallyUsed, resp.StatusCode)
 	}
 
 	f, err := d.fs.Create(target)

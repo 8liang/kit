@@ -2,6 +2,7 @@ package protobuf
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -55,6 +56,11 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 	if files, err = findProtoFiles(af, protoDir, cfg); err != nil {
 		return
 	}
+	// 构造带 GOPATH/bin 的 PATH，让 protoc 能找到 go install 安装的插件（如 protoc-gen-go）
+	// Build PATH with GOPATH/bin prepended so protoc finds go-installed plugins.
+	gobin := filepath.Join(goPathOrDefault(cfg.goPath), "bin")
+	pathEnv := "PATH=" + gobin + ":" + os.Getenv("PATH")
+	env := replaceEnv(os.Environ(), pathEnv)
 	outPath := map[string]struct{}{}
 	for _, file := range files {
 		var s *Summary
@@ -66,6 +72,7 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 			protocBin = cfg.protocPath
 		}
 		cmd := exec.Command(protocBin, append(s.Args, s.ProtoFile)...)
+		cmd.Env = env
 		if cfg.debug {
 			fmt.Println(cmd)
 		}
@@ -73,8 +80,10 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 		outPath[s.OutPath] = struct{}{}
 	}
 	if cfg.injectTag {
+		injectTagBin := filepath.Join(gobin, "protoc-go-inject-tag")
 		for out := range outPath {
-			cmd := exec.Command("protoc-go-inject-tag", "-input="+out+"/*.pb.go")
+			cmd := exec.Command(injectTagBin, "-input="+out+"/*.pb.go")
+			cmd.Env = env
 			if cfg.debug {
 				fmt.Println(cmd)
 			}
@@ -82,6 +91,26 @@ func GenerateCommands(af afero.Fs, protoDir string, opts ...Option) (cmds []*exe
 		}
 	}
 	return
+}
+
+// replaceEnv returns a copy of env with the key=value entry (matched by prefix) replaced or appended.
+// replaceEnv 返回 env 的副本，替换（匹配 prefix）或追加 key=value。
+func replaceEnv(env []string, entry string) []string {
+	out := make([]string, 0, len(env))
+	key := strings.SplitN(entry, "=", 2)[0] + "="
+	replaced := false
+	for _, e := range env {
+		if strings.HasPrefix(e, key) {
+			out = append(out, entry)
+			replaced = true
+		} else {
+			out = append(out, e)
+		}
+	}
+	if !replaced {
+		out = append(out, entry)
+	}
+	return out
 }
 
 func dirExists(fs afero.Fs, path string) bool {
@@ -140,4 +169,13 @@ func findProtoFiles(af afero.Fs, protoDir string, cfg *Config) (protoFiles []str
 		}
 	}
 	return
+}
+
+// goPathOrDefault returns GOPATH or its default ($HOME/go).
+// goPathOrDefault 返回 GOPATH 或默认值 ($HOME/go)。
+func goPathOrDefault(s string) string {
+	if s != "" {
+		return s
+	}
+	return filepath.Join(os.Getenv("HOME"), "go")
 }
